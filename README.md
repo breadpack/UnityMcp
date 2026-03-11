@@ -1,5 +1,8 @@
 # Unity MCP
 
+[![NuGet](https://img.shields.io/nuget/v/dev.breadpack.UnityMcpBridge)](https://www.nuget.org/packages/dev.breadpack.UnityMcpBridge)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Unity MCP (Model Context Protocol) Bridge — Connect AI agents to Unity Editor.
 
 ## Architecture
@@ -12,60 +15,112 @@ UnityMcpBridge (.NET)
 Unity Editor (UnityMcpEditor package)
 ```
 
-- **UnityMcpBridge** — .NET MCP server, translates MCP protocol to Unity TCP commands
-- **UnityMcpEditor** — Unity Editor package with TCP server, request handlers, and utilities
+Two components are required:
 
-## Installation
+| Component | Role | Install method |
+|-----------|------|---------------|
+| **UnityMcpBridge** | .NET MCP server (stdio ↔ TCP) | `dotnet tool` / clone |
+| **UnityMcpEditor** | Unity Editor plugin (TCP server + handlers) | UPM git URL |
 
-### 1. Unity Editor Package
+## Quick Start
 
-Add `UnityMcpEditor` to your Unity project via UPM git URL:
-
-1. Open Unity Editor
-2. Window > Package Manager > "+" > Add package from git URL
-3. Enter:
-```
-https://github.com/breadpack/UnityMcp.git?path=UnityMcpEditor
-```
-
-### 2. MCP Bridge
-
-#### Option A: dotnet tool (Recommended)
+### Step 1. Install MCP Bridge
 
 ```bash
 dotnet tool install -g dev.breadpack.UnityMcpBridge
 ```
 
-Then configure your AI tool:
+> Requires [.NET 9.0+](https://dotnet.microsoft.com/download) SDK
+
+### Step 2. Install Unity Editor Package
+
+Open Unity Editor > Window > Package Manager > **+** > **Add package from git URL**:
+
+```
+https://github.com/breadpack/UnityMcp.git?path=UnityMcpEditor
+```
+
+> Requires Unity 6000.0+ (Unity 6). Dependencies: Newtonsoft.Json, UniTask
+
+### Step 3. Configure your AI tool
+
+Add MCP server configuration to your AI tool:
+
+<details>
+<summary><b>Claude Code</b> (.mcp.json in project root)</summary>
 
 ```json
 {
   "mcpServers": {
     "unity": {
-      "command": "unity-mcp-bridge",
-      "env": { "UNITY_TCP_PORT": "9876" }
+      "command": "unity-mcp-bridge"
     }
   }
 }
 ```
 
-#### Option B: Clone and build
-
+Or via CLI:
 ```bash
-git clone https://github.com/breadpack/UnityMcp.git
-cd UnityMcp/UnityMcpBridge
-dotnet build
+claude mcp add unity -- unity-mcp-bridge
 ```
 
-Then configure with the built executable path:
+</details>
+
+<details>
+<summary><b>Claude Desktop</b></summary>
+
+Edit `%APPDATA%/Claude/claude_desktop_config.json` (Windows) or `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
 
 ```json
 {
   "mcpServers": {
     "unity": {
+      "command": "unity-mcp-bridge"
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><b>Cursor / VS Code</b> (.cursor/mcp.json or .vscode/mcp.json)</summary>
+
+```json
+{
+  "mcpServers": {
+    "unity": {
+      "command": "unity-mcp-bridge"
+    }
+  }
+}
+```
+
+</details>
+
+### Step 4. Verify
+
+Open Unity Editor with the package installed, then ask your AI agent:
+
+> "Unity에 ping을 보내줘"
+
+## Alternative: Clone and Build
+
+If you prefer not to use `dotnet tool`:
+
+```bash
+git clone https://github.com/breadpack/UnityMcp.git
+cd UnityMcp/UnityMcpBridge
+dotnet run
+```
+
+Configure with:
+```json
+{
+  "mcpServers": {
+    "unity": {
       "command": "dotnet",
-      "args": ["run", "--project", "/path/to/UnityMcp/UnityMcpBridge"],
-      "env": { "UNITY_TCP_PORT": "9876" }
+      "args": ["run", "--project", "/path/to/UnityMcp/UnityMcpBridge"]
     }
   }
 }
@@ -77,31 +132,13 @@ Then configure with the built executable path:
 |---------------------|---------|-------------|
 | `UNITY_TCP_PORT` | `9876` | TCP port to connect to Unity Editor |
 
-### Claude Code (.mcp.json)
-
-Place `.mcp.json` in your project root:
-
+Example with custom port:
 ```json
 {
   "mcpServers": {
     "unity": {
       "command": "unity-mcp-bridge",
-      "env": { "UNITY_TCP_PORT": "9876" }
-    }
-  }
-}
-```
-
-### Claude Desktop (claude_desktop_config.json)
-
-Add to `%APPDATA%/Claude/claude_desktop_config.json` (Windows) or `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
-
-```json
-{
-  "mcpServers": {
-    "unity": {
-      "command": "unity-mcp-bridge",
-      "env": { "UNITY_TCP_PORT": "9876" }
+      "env": { "UNITY_TCP_PORT": "9877" }
     }
   }
 }
@@ -142,21 +179,21 @@ Add to `%APPDATA%/Claude/claude_desktop_config.json` (Windows) or `~/Library/App
 | `unity_render_uxml` | Render UXML template |
 | `unity_play_mode` | Control Play Mode |
 
-## Requirements
-
-- **Unity**: 6000.0+ (Unity 6)
-- **.NET**: 9.0+ (for Bridge)
-- **Dependencies**: Newtonsoft.Json (Unity), UniTask (Unity)
-
 ## Conditional Features
 
 ### Addressables Support
 
-To enable Addressable tools, add the scripting define symbol `UNITY_MCP_ADDRESSABLES` to your Unity project:
+To enable Addressable tools, add the scripting define symbol to your Unity project:
 
-1. Edit > Project Settings > Player > Script Compilation > Scripting Define Symbols
+1. Edit > Project Settings > Player > Scripting Define Symbols
 2. Add `UNITY_MCP_ADDRESSABLES`
+
+## Update
+
+```bash
+dotnet tool update -g dev.breadpack.UnityMcpBridge
+```
 
 ## License
 
-MIT
+[MIT](LICENSE)
