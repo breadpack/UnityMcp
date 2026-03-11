@@ -6,6 +6,16 @@
   "unity": "6000.0",
   "keywords": ["mcp", "ai", "editor", "tools"],
   "author": {
-    "name": "breadpack"
-  }
+    "name": "breadpack",
+    "url": "https://github.com/breadpack"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/breadpack/UnityMcp.git"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
+  "samples": []
 }
