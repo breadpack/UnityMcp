@@ -8,7 +8,7 @@
     <!-- NuGet dotnet tool packaging -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>unity-mcp-bridge</ToolCommandName>
-    <PackageId>BreadPack.UnityMcp.Bridge</PackageId>
+    <PackageId>dev.breadpack.UnityMcpBridge</PackageId>
     <Version>0.1.0</Version>
     <Authors>breadpack</Authors>
     <Description>MCP (Model Context Protocol) Bridge for Unity Editor — connect AI agents to Unity Editor</Description>

@@ -33,7 +33,7 @@ https://github.com/breadpack/UnityMcp.git?path=UnityMcpEditor
 #### Option A: dotnet tool (Recommended)
 
 ```bash
-dotnet tool install -g BreadPack.UnityMcp.Bridge
+dotnet tool install -g dev.breadpack.UnityMcpBridge
 ```
 
 Then configure your AI tool:
