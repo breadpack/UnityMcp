@@ -1,5 +1,5 @@
 using System;
-using Cysharp.Threading.Tasks;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -10,7 +10,7 @@ namespace BreadPack.Mcp.Unity
     {
         public string ToolName => "unity_take_screenshot";
 
-        public async UniTask<object> HandleAsync(JObject @params)
+        public async Task<object> HandleAsync(JObject @params)
         {
             if (!EditorApplication.isPlaying)
                 throw new Exception("Play Mode에서만 스크린샷을 캡처할 수 있습니다");
@@ -20,8 +20,8 @@ namespace BreadPack.Mcp.Unity
             // Game View를 강제로 Repaint하여 최신 프레임이 렌더링되도록 함
             RepaintGameView();
 
-            // 렌더링이 완료될 때까지 프레임 끝 대기
-            await UniTask.WaitForEndOfFrame();
+            // 렌더링이 완료될 때까지 프레임 대기
+            await MainThreadDispatcher.DelayFrames(1);
 
             var tex = ScreenCapture.CaptureScreenshotAsTexture();
             if (tex == null)

@@ -1,11 +1,11 @@
-using Cysharp.Threading.Tasks;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace BreadPack.Mcp.Unity
 {
     public interface IAsyncRequestHandler : IRequestHandler
     {
-        UniTask<object> HandleAsync(JObject @params);
+        Task<object> HandleAsync(JObject @params);
 
         // 동기 Handle은 사용하지 않으므로 기본 구현으로 예외 발생
         object IRequestHandler.Handle(JObject @params)

@@ -1,7 +1,7 @@
 {
     "name": "BreadPack.Mcp.Unity",
     "rootNamespace": "BreadPack.Mcp.Unity",
-    "references": ["UniTask"],
+    "references": [],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

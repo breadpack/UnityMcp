@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Cysharp.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -35,6 +34,8 @@ namespace BreadPack.Mcp.Unity
 
             try
             {
+                MainThreadDispatcher.EnsureInitialized();
+
                 _logBuffer = new ConsoleLogBuffer();
                 _logBuffer.Start();
 
@@ -125,10 +126,8 @@ namespace BreadPack.Mcp.Unity
         {
             try
             {
-                // UniTask로 메인 스레드 전환 (ConcurrentQueue + Update() 폴링 대체)
-                await UniTask.SwitchToMainThread();
-
-                var data = await _dispatcher.HandleAsync(request.Tool, request.Params ?? new JObject());
+                var data = await MainThreadDispatcher.RunOnMainThread(
+                    () => _dispatcher.HandleAsync(request.Tool, request.Params ?? new JObject()));
                 return new McpResponse
                 {
                     Id = request.Id,

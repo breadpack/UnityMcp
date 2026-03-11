@@ -36,25 +36,13 @@ dotnet tool install -g dev.breadpack.UnityMcpBridge
 
 > Requires Unity 6000.0+ (Unity 6)
 
-#### 2-1. Install UniTask (prerequisite)
-
-UniTask is required but not auto-resolved by UPM. Install it first:
-
 Open Unity Editor > Window > Package Manager > **+** > **Add package from git URL**:
-
-```
-https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
-```
-
-#### 2-2. Install Unity MCP
-
-Open Package Manager > **+** > **Add package from git URL**:
 
 ```
 https://github.com/breadpack/UnityMcp.git?path=UnityMcpEditor
 ```
 
-Newtonsoft.Json (`com.unity.nuget.newtonsoft-json`) is auto-resolved as a dependency.
+Newtonsoft.Json (`com.unity.nuget.newtonsoft-json`) is auto-resolved as a dependency. No other prerequisites required.
 
 ### Step 3. Configure your AI tool
 

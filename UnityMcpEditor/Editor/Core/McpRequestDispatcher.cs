@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 
@@ -14,7 +14,7 @@ namespace BreadPack.Mcp.Unity
             _handlers[handler.ToolName] = handler;
         }
 
-        public async UniTask<object> HandleAsync(string tool, JObject @params)
+        public async Task<object> HandleAsync(string tool, JObject @params)
         {
             if (_handlers.TryGetValue(tool, out var handler))
             {

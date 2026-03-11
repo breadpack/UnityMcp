@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using Cysharp.Threading.Tasks;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -12,7 +12,7 @@ namespace BreadPack.Mcp.Unity
     {
         public string ToolName => "unity_render_uxml";
 
-        public async UniTask<object> HandleAsync(JObject @params)
+        public async Task<object> HandleAsync(JObject @params)
         {
             var uxmlPath = @params?["uxmlPath"]?.Value<string>();
             if (string.IsNullOrEmpty(uxmlPath))
@@ -59,7 +59,7 @@ namespace BreadPack.Mcp.Unity
                 for (int i = 0; i < 10; i++)
                 {
                     window.Repaint();
-                    await UniTask.DelayFrame(2);
+                    await MainThreadDispatcher.DelayFrames(2);
                 }
 
                 var tex = CaptureWindow(window, width, height);

@@ -74,7 +74,7 @@ namespace BreadPack.Mcp.Unity
                     var json = Encoding.UTF8.GetString(payload);
                     var request = JsonConvert.DeserializeObject<McpRequest>(json);
 
-                    // 핸들러 호출 (내부에서 UniTask.SwitchToMainThread() 사용)
+                    // 핸들러 호출 (MainThreadDispatcher로 메인 스레드 전환)
                     var response = await _handler(request);
                     await SendAsync(JsonConvert.SerializeObject(response, CamelCaseSettings));
                 }
