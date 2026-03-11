@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- NuGet dotnet tool packaging -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>unity-mcp-bridge</ToolCommandName>
+    <PackageId>BreadPack.UnityMcp.Bridge</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>breadpack</Authors>
+    <Description>MCP (Model Context Protocol) Bridge for Unity Editor — connect AI agents to Unity Editor</Description>
+    <PackageProjectUrl>https://github.com/breadpack/UnityMcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/breadpack/UnityMcp</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>mcp;unity;ai;editor;tools</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="0.2.*" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>

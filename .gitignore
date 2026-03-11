@@ -17,11 +17,13 @@ desktop.ini
 *.snupkg
 *.cache
 
-# Unity
+# Unity (Editor-generated project files)
 Library/
 Temp/
 Logs/
 UserSettings/
-*.csproj
-*.sln
 *.log
+
+# Keep Bridge project files, ignore Unity-generated ones
+UnityMcpEditor/**/*.csproj
+UnityMcpEditor/**/*.sln
