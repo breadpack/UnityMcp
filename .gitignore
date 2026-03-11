@@ -12,6 +12,7 @@ desktop.ini
 
 # .NET build output
 [Bb]in/
+!npm/bin/
 [Oo]bj/
 *.nupkg
 *.snupkg
@@ -27,3 +28,8 @@ UserSettings/
 # Keep Bridge project files, ignore Unity-generated ones
 UnityMcpEditor/**/*.csproj
 UnityMcpEditor/**/*.sln
+
+# npm — keep run.js, ignore downloaded binaries
+npm/bin/UnityMcpBridge*
+npm/bin/_tmp*
+node_modules/

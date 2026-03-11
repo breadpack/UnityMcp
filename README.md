@@ -1,5 +1,6 @@
 # Unity MCP
 
+[![npm](https://img.shields.io/npm/v/unity-mcp-bridge)](https://www.npmjs.com/package/unity-mcp-bridge)
 [![NuGet](https://img.shields.io/nuget/v/dev.breadpack.UnityMcpBridge)](https://www.nuget.org/packages/dev.breadpack.UnityMcpBridge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -19,18 +20,24 @@ Two components are required:
 
 | Component | Role | Install method |
 |-----------|------|---------------|
-| **UnityMcpBridge** | .NET MCP server (stdio ↔ TCP) | `dotnet tool` / clone |
+| **UnityMcpBridge** | .NET MCP server (stdio ↔ TCP) | `npx` / `dotnet tool` / clone |
 | **UnityMcpEditor** | Unity Editor plugin (TCP server + handlers) | UPM git URL |
 
 ## Quick Start
 
 ### Step 1. Install MCP Bridge
 
+No pre-install needed — just configure and go (see Step 3).
+
+Or install globally:
+
 ```bash
+# npx (recommended, no .NET required)
+npx -y unity-mcp-bridge
+
+# dotnet tool (requires .NET 9.0+ SDK)
 dotnet tool install -g dev.breadpack.UnityMcpBridge
 ```
-
-> Requires [.NET 9.0+](https://dotnet.microsoft.com/download) SDK
 
 ### Step 2. Install Unity Editor Package
 
@@ -55,7 +62,8 @@ Add MCP server configuration to your AI tool:
 {
   "mcpServers": {
     "unity": {
-      "command": "unity-mcp-bridge"
+      "command": "npx",
+      "args": ["-y", "unity-mcp-bridge"]
     }
   }
 }
@@ -63,7 +71,7 @@ Add MCP server configuration to your AI tool:
 
 Or via CLI:
 ```bash
-claude mcp add unity -- unity-mcp-bridge
+claude mcp add unity -- npx -y unity-mcp-bridge
 ```
 
 </details>
@@ -77,7 +85,8 @@ Edit `%APPDATA%/Claude/claude_desktop_config.json` (Windows) or `~/Library/Appli
 {
   "mcpServers": {
     "unity": {
-      "command": "unity-mcp-bridge"
+      "command": "npx",
+      "args": ["-y", "unity-mcp-bridge"]
     }
   }
 }
@@ -87,6 +96,24 @@ Edit `%APPDATA%/Claude/claude_desktop_config.json` (Windows) or `~/Library/Appli
 
 <details>
 <summary><b>Cursor / VS Code</b> (.cursor/mcp.json or .vscode/mcp.json)</summary>
+
+```json
+{
+  "mcpServers": {
+    "unity": {
+      "command": "npx",
+      "args": ["-y", "unity-mcp-bridge"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><b>Using dotnet tool instead</b></summary>
+
+If you installed via `dotnet tool install -g`, use the command directly:
 
 ```json
 {
@@ -108,7 +135,7 @@ Open Unity Editor with the package installed, then ask your AI agent:
 
 ## Alternative: Clone and Build
 
-If you prefer not to use `dotnet tool`:
+If you prefer to build from source:
 
 ```bash
 git clone https://github.com/breadpack/UnityMcp.git
@@ -127,6 +154,8 @@ Configure with:
   }
 }
 ```
+
+> Requires [.NET 9.0+](https://dotnet.microsoft.com/download) SDK
 
 ## Configuration
 
@@ -191,6 +220,8 @@ To enable Addressable tools, add the scripting define symbol to your Unity proje
 2. Add `UNITY_MCP_ADDRESSABLES`
 
 ## Update
+
+npx는 자동으로 최신 버전을 사용합니다. dotnet tool을 사용하는 경우:
 
 ```bash
 dotnet tool update -g dev.breadpack.UnityMcpBridge

@@ -1,0 +1,22 @@
+{
+  "name": "unity-mcp-bridge",
+  "version": "0.1.0",
+  "description": "MCP (Model Context Protocol) Bridge for Unity Editor — connect AI agents to Unity Editor",
+  "bin": {
+    "unity-mcp-bridge": "./bin/run.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "keywords": ["mcp", "unity", "ai", "editor", "tools", "model-context-protocol"],
+  "author": "breadpack",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/breadpack/UnityMcp.git"
+  },
+  "homepage": "https://github.com/breadpack/UnityMcp",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
