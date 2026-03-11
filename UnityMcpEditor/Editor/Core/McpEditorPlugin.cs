@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class McpEditorPlugin : EditorWindow
     {

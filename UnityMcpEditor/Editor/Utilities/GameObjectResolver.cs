@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public static class GameObjectResolver
     {

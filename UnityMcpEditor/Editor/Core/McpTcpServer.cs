@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class McpTcpServer : IDisposable
     {

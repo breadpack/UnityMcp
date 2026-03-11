@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class AddressableAddHandler : IRequestHandler
     {

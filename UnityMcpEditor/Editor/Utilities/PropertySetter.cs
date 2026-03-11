@@ -5,7 +5,7 @@ using System.Reflection;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public static class PropertySetter
     {

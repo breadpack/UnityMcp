@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class GetScreenHandler : IRequestHandler
     {

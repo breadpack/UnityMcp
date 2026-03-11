@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class ConsoleLogBuffer
     {

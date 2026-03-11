@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class GetAssetHierarchyHandler : IRequestHandler
     {

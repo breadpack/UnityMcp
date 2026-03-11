@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public static class UndoHelper
     {

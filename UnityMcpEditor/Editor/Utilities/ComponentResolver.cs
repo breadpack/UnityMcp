@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public static class ComponentResolver
     {

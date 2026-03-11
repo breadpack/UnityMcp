@@ -1,4 +1,4 @@
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class McpResponse
     {

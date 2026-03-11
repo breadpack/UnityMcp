@@ -3,7 +3,7 @@ using Cysharp.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class McpRequestDispatcher
     {

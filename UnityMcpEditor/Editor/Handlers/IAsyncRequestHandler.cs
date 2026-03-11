@@ -1,7 +1,7 @@
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public interface IAsyncRequestHandler : IRequestHandler
     {

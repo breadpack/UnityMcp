@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 
-namespace UnityMcp.Editor
+namespace BreadPack.Mcp.Unity
 {
     public class McpRequest
     {
