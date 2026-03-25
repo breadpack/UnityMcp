@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "unity-bridge": {
+      "command": "npx",
+      "args": ["-y", "unity-mcp-bridge"]
+    }
+  }
+}
