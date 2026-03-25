@@ -49,16 +49,20 @@ namespace BreadPack.Mcp.Unity
         public static Task<T> RunOnMainThread<T>(Func<Task<T>> func)
         {
             var tcs = new TaskCompletionSource<T>();
-            _queue.Enqueue(async () =>
+            _queue.Enqueue(() =>
             {
                 try
                 {
-                    var result = await func();
-                    tcs.SetResult(result);
+                    func().ContinueWith(t =>
+                    {
+                        if (t.IsFaulted) tcs.TrySetException(t.Exception.InnerException ?? t.Exception);
+                        else if (t.IsCanceled) tcs.TrySetCanceled();
+                        else tcs.TrySetResult(t.Result);
+                    });
                 }
                 catch (Exception ex)
                 {
-                    tcs.SetException(ex);
+                    tcs.TrySetException(ex);
                 }
             });
             EditorApplication.QueuePlayerLoopUpdate();

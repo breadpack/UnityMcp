@@ -13,7 +13,7 @@ public static class GetAssetHierarchyTool
         UnityConnection connection,
         [Description("Asset 경로 (예: Assets/Prefabs/Player.prefab)")] string? assetPath = null,
         [Description("Asset GUID")] string? assetGuid = null,
-        [Description("최대 탐색 깊이")] int maxDepth = 5,
+        [Description("최대 탐색 깊이")] int maxDepth = 3,
         [Description("컴포넌트 목록 포함 여부")] bool includeComponents = false,
         CancellationToken ct = default)
     {

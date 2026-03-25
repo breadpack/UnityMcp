@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -49,11 +49,35 @@ namespace BreadPack.Mcp.Unity
 
                 RegisterHandlers();
 
-                _actualPort = FindAvailablePort(BasePort, MaxPortRetries);
-                _server = new McpTcpServer(_actualPort, HandleRequestAsync);
-                _server.Start();
-                _isRunning = true;
-                EditorPrefs.SetInt(PortPrefsKey, _actualPort);
+                Exception lastEx = null;
+                int lastPort = EditorPrefs.GetInt(PortPrefsKey, -1);
+                var portsToTry = new List<int>();
+                if (lastPort >= BasePort && lastPort < BasePort + MaxPortRetries) portsToTry.Add(lastPort);
+                for (int i = 0; i < MaxPortRetries; i++)
+                {
+                    int p = BasePort + i;
+                    if (p != lastPort) portsToTry.Add(p);
+                }
+
+                foreach (var port in portsToTry)
+                {
+                    try
+                    {
+                        _server = new McpTcpServer(port, HandleRequestAsync);
+                        _server.Start();
+                        _actualPort = port;
+                        _isRunning = true;
+                        EditorPrefs.SetInt(PortPrefsKey, port);
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        _server?.Dispose();
+                        _server = null;
+                        lastEx = ex;
+                    }
+                }
+                if (!_isRunning) throw lastEx ?? new Exception("No available port");
 
                 Debug.Log($"[MCP] Server started on port {_actualPort}");
             }
@@ -107,39 +131,6 @@ namespace BreadPack.Mcp.Unity
                     }
                 }
             }
-        }
-
-        private static bool TryListenPort(int port)
-        {
-            try
-            {
-                using (var listener = new System.Net.Sockets.TcpListener(
-                    System.Net.IPAddress.Loopback, port))
-                {
-                    listener.Start();
-                    listener.Stop();
-                }
-                return true;
-            }
-            catch (System.Net.Sockets.SocketException)
-            {
-                return false;
-            }
-        }
-
-        private static int FindAvailablePort(int basePort, int maxRetries)
-        {
-            int lastPort = EditorPrefs.GetInt(PortPrefsKey, -1);
-            if (lastPort >= basePort && lastPort < basePort + maxRetries && TryListenPort(lastPort))
-                return lastPort;
-
-            for (int i = 0; i < maxRetries; i++)
-            {
-                int port = basePort + i;
-                if (port == lastPort) continue;
-                if (TryListenPort(port)) return port;
-            }
-            throw new Exception($"No available port found in range {basePort}-{basePort + maxRetries - 1}");
         }
 
         private static async Task<McpResponse> HandleRequestAsync(McpRequest request)

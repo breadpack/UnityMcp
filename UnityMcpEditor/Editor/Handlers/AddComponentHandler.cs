@@ -35,7 +35,6 @@ namespace BreadPack.Mcp.Unity
                 gameObject = go.name,
                 path = GameObjectResolver.GetPath(go),
                 componentType = type.Name,
-                fullTypeName = type.FullName,
                 fields,
                 properties
             };

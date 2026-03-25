@@ -16,6 +16,7 @@ namespace BreadPack.Mcp.Unity
                 throw new Exception("Play Mode에서만 스크린샷을 캡처할 수 있습니다");
 
             int quality = @params?["quality"]?.Value<int>() ?? 75;
+            int maxWidth = @params?["maxWidth"]?.Value<int>() ?? 0;
 
             RepaintGameView();
             UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
@@ -40,6 +41,22 @@ namespace BreadPack.Mcp.Unity
 
             try
             {
+                if (maxWidth > 0 && tex.width > maxWidth)
+                {
+                    float ratio = (float)maxWidth / tex.width;
+                    int newHeight = Mathf.RoundToInt(tex.height * ratio);
+                    var resized = new Texture2D(maxWidth, newHeight);
+                    var rt = RenderTexture.GetTemporary(maxWidth, newHeight);
+                    Graphics.Blit(tex, rt);
+                    RenderTexture.active = rt;
+                    resized.ReadPixels(new Rect(0, 0, maxWidth, newHeight), 0, 0);
+                    resized.Apply();
+                    RenderTexture.active = null;
+                    RenderTexture.ReleaseTemporary(rt);
+                    UnityEngine.Object.DestroyImmediate(tex);
+                    tex = resized;
+                }
+
                 byte[] bytes = quality > 0 ? tex.EncodeToJPG(quality) : tex.EncodeToPNG();
                 string mimeType = quality > 0 ? "image/jpeg" : "image/png";
                 return new

@@ -12,9 +12,10 @@ public static class TakeScreenshotTool
     public static async Task<IEnumerable<AIContent>> Execute(
         UnityConnection connection,
         [Description("JPEG 품질 (1-100, 0이면 PNG)")] int quality = 75,
+        [Description("최대 너비 (0이면 원본 유지)")] int maxWidth = 0,
         CancellationToken ct = default)
     {
-        var paramsJson = JsonDocument.Parse($"{{\"quality\":{quality}}}");
+        var paramsJson = JsonDocument.Parse($"{{\"quality\":{quality},\"maxWidth\":{maxWidth}}}");
         var result = await connection.SendRequestAsync("unity_take_screenshot", paramsJson.RootElement, ct);
 
         var root = result.RootElement;

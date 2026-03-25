@@ -9,6 +9,20 @@ namespace BreadPack.Mcp.Unity
 {
     public static class PropertySetter
     {
+        private static readonly Dictionary<(Type, string), MemberInfo> _memberCache = new();
+
+        private static MemberInfo GetCachedMember(Type type, string name)
+        {
+            var key = (type, name);
+            if (_memberCache.TryGetValue(key, out var cached)) return cached;
+
+            var member = (MemberInfo)type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (member != null) _memberCache[key] = member;
+            return member;
+        }
+
         public static Dictionary<string, object> SetProperties(Component component, JObject properties)
         {
             var results = new Dictionary<string, object>();
@@ -47,20 +61,16 @@ namespace BreadPack.Mcp.Unity
 
         public static void SetDirectProperty(object target, Type targetType, string name, JToken value)
         {
-            // Try field first (Public + NonPublic + Instance)
-            var field = targetType.GetField(name,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (field != null)
+            var member = GetCachedMember(targetType, name);
+
+            if (member is FieldInfo field)
             {
                 var converted = ConvertValue(value, field.FieldType);
                 field.SetValue(target, converted);
                 return;
             }
 
-            // Try property (Public + Instance, writable)
-            var prop = targetType.GetProperty(name,
-                BindingFlags.Public | BindingFlags.Instance);
-            if (prop != null && prop.CanWrite)
+            if (member is PropertyInfo prop && prop.CanWrite)
             {
                 var converted = ConvertValue(value, prop.PropertyType);
                 prop.SetValue(target, converted);
@@ -82,10 +92,9 @@ namespace BreadPack.Mcp.Unity
             {
                 string memberName = parts[i];
                 bool isStruct = false;
+                var member = GetCachedMember(currentType, memberName);
 
-                var field = currentType.GetField(memberName,
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (field != null)
+                if (member is FieldInfo field)
                 {
                     isStruct = field.FieldType.IsValueType && !field.FieldType.IsPrimitive
                                && !field.FieldType.IsEnum;
@@ -95,9 +104,7 @@ namespace BreadPack.Mcp.Unity
                     continue;
                 }
 
-                var prop = currentType.GetProperty(memberName,
-                    BindingFlags.Public | BindingFlags.Instance);
-                if (prop != null && prop.CanRead)
+                if (member is PropertyInfo prop && prop.CanRead)
                 {
                     isStruct = prop.PropertyType.IsValueType && !prop.PropertyType.IsPrimitive
                                && !prop.PropertyType.IsEnum;
@@ -123,18 +130,15 @@ namespace BreadPack.Mcp.Unity
                 var (parentObj, parentType, memberName, isStruct) = chain[i];
                 if (!isStruct) break;
 
-                var field = parentType.GetField(memberName,
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (field != null)
+                var member = GetCachedMember(parentType, memberName);
+                if (member is FieldInfo field)
                 {
                     field.SetValue(parentObj, writeBackValue);
                     writeBackValue = parentObj;
                     continue;
                 }
 
-                var prop = parentType.GetProperty(memberName,
-                    BindingFlags.Public | BindingFlags.Instance);
-                if (prop != null && prop.CanWrite)
+                if (member is PropertyInfo prop && prop.CanWrite)
                 {
                     prop.SetValue(parentObj, writeBackValue);
                     writeBackValue = parentObj;

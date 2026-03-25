@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -96,15 +97,30 @@ namespace BreadPack.Mcp.Unity
                         break;
                     }
 
-                    var payload = new byte[length];
-                    if (!await ReadExactAsync(stream, payload, length, ct)) break;
+                    var payload = ArrayPool<byte>.Shared.Rent(length);
+                    try
+                    {
+                        if (!await ReadExactAsync(stream, payload, length, ct)) break;
 
-                    var json = Encoding.UTF8.GetString(payload);
-                    var request = JsonConvert.DeserializeObject<McpRequest>(json);
+                        var json = Encoding.UTF8.GetString(payload, 0, length);
+                        var request = JsonConvert.DeserializeObject<McpRequest>(json);
 
-                    // 핸들러 호출 (MainThreadDispatcher로 메인 스레드 전환)
-                    var response = await _handler(request);
-                    await SendAsync(JsonConvert.SerializeObject(response, CamelCaseSettings));
+                        // 핸들러 호출 (MainThreadDispatcher로 메인 스레드 전환)
+                        McpResponse response;
+                        try
+                        {
+                            response = await _handler(request);
+                        }
+                        catch (Exception hex)
+                        {
+                            response = new McpResponse { Id = request?.Id, Success = false, Error = hex.Message };
+                        }
+                        await SendAsync(JsonConvert.SerializeObject(response, CamelCaseSettings));
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(payload);
+                    }
                 }
                 catch (OperationCanceledException) { break; }
                 catch (Exception ex)
@@ -133,6 +149,7 @@ namespace BreadPack.Mcp.Unity
             await _sendLock.WaitAsync();
             try
             {
+                if (_stream == null || !_stream.CanWrite) return;
                 var payload = Encoding.UTF8.GetBytes(json);
                 var length = new byte[4];
                 length[0] = (byte)(payload.Length >> 24);

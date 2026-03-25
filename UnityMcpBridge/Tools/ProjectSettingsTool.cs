@@ -12,7 +12,7 @@ public static class ProjectSettingsTool
         UnityConnection connection,
         [Description("'get' 또는 'set'")] string action,
         [Description("설정 카테고리: 'player', 'quality', 'physics', 'time'")] string category,
-        [Description("설정 이름 (set 시 필수, get 시 null이면 전체)")] string? propertyName = null,
+        [Description("설정 이름 (예: player의 'productName', 'bundleVersion' / time의 'fixedDeltaTime')")] string? propertyName = null,
         [Description("설정 값 (set 시 필수)")] string? value = null,
         CancellationToken ct = default)
     {
