@@ -131,6 +131,9 @@ namespace BreadPack.Mcp.Unity
                     }
                 }
             }
+
+            // Custom tool registration (user-defined [McpTool] methods)
+            CustomToolRegistry.ScanAndRegister(_dispatcher);
         }
 
         private static async Task<McpResponse> HandleRequestAsync(McpRequest request)
