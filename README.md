@@ -175,9 +175,59 @@ Example with custom port:
 }
 ```
 
-## Available Tools (23)
+## Claude Code Plugin (Skills 포함)
 
-### Observation (12)
+Claude Code에서 스킬(슬래시 커맨드)과 함께 사용하려면 플러그인으로 설치할 수 있습니다.
+
+### Plugin 설치
+
+**방법 A: GitHub에서 설치 (권장)**
+
+```bash
+claude plugin install --from https://github.com/breadpack/UnityMcp
+```
+
+**방법 B: 로컬 클론 후 설치**
+
+```bash
+git clone https://github.com/breadpack/UnityMcp.git
+claude --plugin-dir ./UnityMcp
+```
+
+> Plugin 설치 시 MCP 서버 설정(`.mcp.json`)이 자동으로 적용되므로, Step 3의 수동 설정은 불필요합니다.
+> Unity Editor 패키지(Step 2)는 별도로 설치해야 합니다.
+
+### 제공 Skills
+
+Plugin을 설치하면 다음 슬래시 커맨드를 사용할 수 있습니다:
+
+| Skill | 명령어 | 설명 |
+|-------|--------|------|
+| **Scene Setup** | `/unity-mcp:unity-scene-setup` | 씬 구성 워크플로우 — GameObject 생성, 계층 구조, 컴포넌트 설정 |
+| **UI Build** | `/unity-mcp:unity-ui-build` | UGUI(Canvas) 및 UI Toolkit UI 구축 가이드 |
+| **Material Setup** | `/unity-mcp:unity-material-setup` | Material 생성, 셰이더 프로퍼티 설정 레퍼런스 |
+| **Prefab Workflow** | `/unity-mcp:unity-prefab-workflow` | Prefab 인스턴스화, 편집 모드, 저장 |
+| **Debug** | `/unity-mcp:unity-debug` | 콘솔 로그, 스크린샷, Animator 상태 검사 |
+| **Build & Deploy** | `/unity-mcp:unity-build-deploy` | 빌드 실행, Project Settings 관리 |
+
+### Plugin 사용 예시
+
+```
+> /unity-mcp:unity-scene-setup
+> 3D 플랫포머 게임의 기본 씬을 구성해줘.
+> 바닥(Plane), 플레이어(Capsule+Rigidbody+CapsuleCollider), 카메라를 배치해줘.
+```
+
+```
+> /unity-mcp:unity-debug
+> 현재 씬에서 에러가 발생하는 원인을 찾아줘.
+```
+
+---
+
+## Available Tools (35)
+
+### Observation (14)
 
 | Tool | Description |
 |------|-------------|
@@ -186,29 +236,71 @@ Example with custom port:
 | `unity_get_asset_hierarchy` | Inspect Prefab/Scene hierarchy without opening |
 | `unity_get_component_details` | Get component property details |
 | `unity_get_screen` | Get current screen info (Play Mode) |
-| `unity_get_ui_tree` | Get UI visual tree |
+| `unity_get_ui_tree` | Get UI Toolkit visual tree (Play Mode) |
+| `unity_get_ugui_tree` | Get UGUI Canvas hierarchy |
 | `unity_get_console_logs` | Get console log entries |
-| `unity_get_available_actions` | List available actions |
-| `unity_take_screenshot` | Capture Game/Scene view screenshot |
-| `unity_addressable_add` | Add asset to Addressable group |
-| `unity_addressable_set_address` | Set Addressable asset address |
+| `unity_get_available_actions` | List clickable UI actions (Play Mode) |
+| `unity_take_screenshot` | Capture game view screenshot (Play Mode) |
+| `unity_render_uxml` | Render UXML to image |
 | `unity_refresh_assets` | Refresh AssetDatabase |
+| `unity_addressable_add` | Add asset to Addressable group (requires package) |
+| `unity_addressable_set_address` | Set Addressable asset address (requires package) |
 
-### Scene Manipulation (11)
+### Scene Manipulation (10)
 
 | Tool | Description |
 |------|-------------|
 | `unity_create_gameobject` | Create new GameObject |
-| `unity_delete_gameobject` | Delete GameObject |
+| `unity_delete_gameobject` | Delete GameObject (dryRun supported) |
 | `unity_reparent_gameobject` | Change parent of GameObject |
-| `unity_set_transform` | Set transform properties |
-| `unity_add_component` | Add component to GameObject |
-| `unity_remove_component` | Remove component |
-| `unity_set_property` | Set component property value |
-| `unity_set_asset_reference` | Set asset reference on component |
+| `unity_set_transform` | Set position / rotation / scale |
+| `unity_set_active` | Activate / deactivate GameObject |
+| `unity_select_gameobject` | Select and ping in Editor |
+| `unity_save_scene` | Save current scene |
+| `unity_load_scene` | Open scene (Single / Additive) |
+| `unity_play_mode` | Enter / exit / toggle Play Mode |
 | `unity_instantiate_prefab` | Instantiate prefab in scene |
-| `unity_render_uxml` | Render UXML template |
-| `unity_play_mode` | Control Play Mode |
+
+### Component & Property (4)
+
+| Tool | Description |
+|------|-------------|
+| `unity_add_component` | Add component to GameObject |
+| `unity_remove_component` | Remove component (dryRun supported) |
+| `unity_set_property` | Set component property (dot-notation, array, asset ref) |
+| `unity_set_asset_reference` | Set asset reference on component field |
+
+### Material (2)
+
+| Tool | Description |
+|------|-------------|
+| `unity_create_material` | Create new Material asset |
+| `unity_set_material_property` | Set material property (color, float, texture, vector) |
+
+### Asset Management (1)
+
+| Tool | Description |
+|------|-------------|
+| `unity_manage_asset` | Move / copy / delete asset, create folder |
+
+### Prefab (1)
+
+| Tool | Description |
+|------|-------------|
+| `unity_prefab_edit` | Enter / save / exit Prefab edit mode |
+
+### Animation (1)
+
+| Tool | Description |
+|------|-------------|
+| `unity_animator_control` | Set Animator parameters, query state (Play Mode) |
+
+### Build & Settings (2)
+
+| Tool | Description |
+|------|-------------|
+| `unity_build` | Build player (Windows, macOS, Linux, Android, iOS, WebGL) |
+| `unity_project_settings` | Read / write PlayerSettings, QualitySettings, Physics, Time |
 
 ## Conditional Features
 
