@@ -15,6 +15,7 @@ public static class RemoveComponentTool
         [Description("대상 경로")] string? path = null,
         [Description("대상 InstanceID")] int? instanceId = null,
         [Description("같은 타입 컴포넌트가 여러 개일 때 인덱스 (0-based)")] int index = 0,
+        [Description("실행하지 않고 결과만 미리보기")] bool dryRun = false,
         CancellationToken ct = default)
     {
         var paramDict = new Dictionary<string, object?>
@@ -24,12 +25,10 @@ public static class RemoveComponentTool
         };
         if (path != null) paramDict["path"] = path;
         if (instanceId != null) paramDict["instanceId"] = instanceId;
+        paramDict["dryRun"] = dryRun;
 
         using var paramsJson = JsonDocument.Parse(JsonSerializer.Serialize(paramDict));
         var result = await connection.SendRequestAsync("unity_remove_component", paramsJson.RootElement, ct);
-        var root = result.RootElement;
-        if (root.TryGetProperty("success", out var s) && !s.GetBoolean())
-            return $"Error: {root.GetProperty("error").GetString()}";
-        return root.GetProperty("data").GetRawText();
+        return ResponseFormatter.Format(result);
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -94,15 +95,17 @@ namespace BreadPack.Mcp.Unity
         {
             if (go == null) return string.Empty;
 
-            string path = go.name;
+            var names = new List<string>();
+            names.Add(go.name);
             var current = go.transform.parent;
             while (current != null)
             {
-                path = current.name + "/" + path;
+                names.Add(current.name);
                 current = current.parent;
             }
 
-            return path;
+            names.Reverse();
+            return string.Join("/", names);
         }
     }
 }

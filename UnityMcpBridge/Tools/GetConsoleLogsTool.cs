@@ -22,9 +22,6 @@ public static class GetConsoleLogsTool
         var paramsJson = JsonDocument.Parse(paramsObj);
         var result = await connection.SendRequestAsync("unity_get_console_logs", paramsJson.RootElement, ct);
 
-        var root = result.RootElement;
-        if (root.TryGetProperty("success", out var s) && !s.GetBoolean())
-            return $"Error: {root.GetProperty("error").GetString()}";
-        return root.GetProperty("data").GetRawText();
+        return ResponseFormatter.Format(result);
     }
 }

@@ -14,18 +14,17 @@ public static class DeleteGameObjectTool
         [Description("삭제할 GameObject 경로")] string? path = null,
         [Description("삭제할 GameObject InstanceID")] int? instanceId = null,
         [Description("자식 포함 삭제 여부 (false면 자식을 부모로 이동)")] bool includeChildren = true,
+        [Description("실행하지 않고 결과만 미리보기")] bool dryRun = false,
         CancellationToken ct = default)
     {
         var paramDict = new Dictionary<string, object?>();
         if (path != null) paramDict["path"] = path;
         if (instanceId != null) paramDict["instanceId"] = instanceId;
         paramDict["includeChildren"] = includeChildren;
+        paramDict["dryRun"] = dryRun;
 
         using var paramsJson = JsonDocument.Parse(JsonSerializer.Serialize(paramDict));
         var result = await connection.SendRequestAsync("unity_delete_gameobject", paramsJson.RootElement, ct);
-        var root = result.RootElement;
-        if (root.TryGetProperty("success", out var s) && !s.GetBoolean())
-            return $"Error: {root.GetProperty("error").GetString()}";
-        return root.GetProperty("data").GetRawText();
+        return ResponseFormatter.Format(result);
     }
 }

@@ -22,6 +22,8 @@ namespace BreadPack.Mcp.Unity
         private TcpClient _client;
         private NetworkStream _stream;
         private CancellationTokenSource _cts;
+        private CancellationTokenSource _readCts;
+        private readonly object _clientLock = new();
         private readonly SemaphoreSlim _sendLock = new(1, 1);
         private readonly int _port;
         private readonly Func<McpRequest, Task<McpResponse>> _handler;
@@ -39,8 +41,15 @@ namespace BreadPack.Mcp.Unity
         {
             _cts = new CancellationTokenSource();
             _listener = new TcpListener(IPAddress.Loopback, _port);
+            _listener.Server.SetSocketOption(
+                SocketOptionLevel.Socket,
+                SocketOptionName.ReuseAddress, true);
             _listener.Start();
-            _ = AcceptLoopAsync(_cts.Token);
+            _ = AcceptLoopAsync(_cts.Token).ContinueWith(t =>
+            {
+                if (t.Exception != null)
+                    UnityEngine.Debug.LogError($"[MCP] AcceptLoop error: {t.Exception.InnerException?.Message}");
+            });
         }
 
         private async Task AcceptLoopAsync(CancellationToken ct)
@@ -50,10 +59,20 @@ namespace BreadPack.Mcp.Unity
                 try
                 {
                     var client = await _listener.AcceptTcpClientAsync();
-                    _client?.Close();
-                    _client = client;
-                    _stream = client.GetStream();
-                    _ = ReadLoopAsync(_stream, ct);
+                    CancellationTokenSource readCts;
+                    NetworkStream stream;
+                    lock (_clientLock)
+                    {
+                        _readCts?.Cancel();
+                        _readCts?.Dispose();
+                        _client?.Close();
+                        _client = client;
+                        _stream = client.GetStream();
+                        _readCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                        readCts = _readCts;
+                        stream = _stream;
+                    }
+                    _ = ReadLoopAsync(stream, readCts.Token);
                 }
                 catch (ObjectDisposedException) { break; }
                 catch (Exception) { /* 재시도 */ }
@@ -133,7 +152,8 @@ namespace BreadPack.Mcp.Unity
         public void Dispose()
         {
             _cts?.Cancel();
-            _stream?.Close();
+            _readCts?.Cancel();
+            _readCts?.Dispose();
             _client?.Close();
             _listener?.Stop();
             _cts?.Dispose();

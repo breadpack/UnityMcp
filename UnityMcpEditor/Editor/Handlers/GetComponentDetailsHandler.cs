@@ -29,7 +29,6 @@ namespace BreadPack.Mcp.Unity
                 result.Add(new
                 {
                     type = comp.GetType().Name,
-                    fullType = comp.GetType().FullName,
                     properties
                 });
             }

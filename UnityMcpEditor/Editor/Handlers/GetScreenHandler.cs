@@ -47,14 +47,16 @@ namespace BreadPack.Mcp.Unity
 
         private static string GetPath(GameObject go)
         {
-            var path = go.name;
+            var names = new List<string>();
+            names.Add(go.name);
             var current = go.transform.parent;
             while (current != null)
             {
-                path = current.name + "/" + path;
+                names.Add(current.name);
                 current = current.parent;
             }
-            return path;
+            names.Reverse();
+            return string.Join("/", names);
         }
     }
 }

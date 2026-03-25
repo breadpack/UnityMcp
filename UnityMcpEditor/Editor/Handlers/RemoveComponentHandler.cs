@@ -12,6 +12,7 @@ namespace BreadPack.Mcp.Unity
             var go = GameObjectResolver.Resolve(@params);
             var componentType = @params?["componentType"]?.Value<string>();
             var index = @params?["index"]?.Value<int>() ?? 0;
+            var dryRun = @params?["dryRun"]?.Value<bool>() ?? false;
 
             if (string.IsNullOrEmpty(componentType))
                 throw new System.ArgumentException("componentType is required");
@@ -23,6 +24,18 @@ namespace BreadPack.Mcp.Unity
 
             var component = ComponentResolver.GetComponent(go, componentType, index);
             var typeName = component.GetType().Name;
+
+            if (dryRun)
+            {
+                return new
+                {
+                    dryRun = true,
+                    gameObject = go.name,
+                    path = GameObjectResolver.GetPath(go),
+                    componentType = typeName,
+                    index
+                };
+            }
 
             UndoHelper.DestroyObject(component, $"Remove {typeName}");
             UndoHelper.MarkDirty(go);

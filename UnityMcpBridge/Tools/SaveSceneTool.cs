@@ -18,9 +18,6 @@ public static class SaveSceneTool
         var paramsJson = JsonDocument.Parse(JsonSerializer.Serialize(paramsObj));
         var result = await connection.SendRequestAsync("unity_save_scene", paramsJson.RootElement, ct);
 
-        var root = result.RootElement;
-        if (root.TryGetProperty("success", out var s) && !s.GetBoolean())
-            return $"Error: {root.GetProperty("error").GetString()}";
-        return root.GetProperty("data").GetRawText();
+        return ResponseFormatter.Format(result);
     }
 }

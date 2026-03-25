@@ -15,14 +15,6 @@ public static class GetUiTreeTool
     {
         var paramsJson = JsonDocument.Parse($"{{\"maxDepth\":{maxDepth}}}");
         var result = await connection.SendRequestAsync("unity_get_ui_tree", paramsJson.RootElement, ct);
-        return FormatResult(result);
-    }
-
-    private static string FormatResult(JsonDocument doc)
-    {
-        var root = doc.RootElement;
-        if (root.TryGetProperty("success", out var s) && !s.GetBoolean())
-            return $"Error: {root.GetProperty("error").GetString()}";
-        return root.GetProperty("data").GetRawText();
+        return ResponseFormatter.Format(result);
     }
 }

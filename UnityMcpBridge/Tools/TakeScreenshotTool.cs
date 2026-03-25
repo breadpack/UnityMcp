@@ -11,7 +11,7 @@ public static class TakeScreenshotTool
     [McpServerTool(Name = "unity_take_screenshot"), Description("현재 게임 화면의 스크린샷을 캡처합니다")]
     public static async Task<IEnumerable<AIContent>> Execute(
         UnityConnection connection,
-        [Description("JPEG 품질 (1-100). 0이면 PNG")] int quality = 75,
+        [Description("JPEG 품질 (1-100, 0이면 PNG)")] int quality = 75,
         CancellationToken ct = default)
     {
         var paramsJson = JsonDocument.Parse($"{{\"quality\":{quality}}}");

@@ -12,9 +12,9 @@ public static class RenderUxmlTool
     public static async Task<IEnumerable<AIContent>> Execute(
         UnityConnection connection,
         [Description("UXML 에셋 경로 (예: Assets/_GAME_ASSETS/UI/UI_TOOLKIT/Menu/Screens/TouchStartScreen.uxml)")] string uxmlPath,
-        [Description("렌더링 너비 (픽셀)")] int width = 1080,
-        [Description("렌더링 높이 (픽셀)")] int height = 1920,
-        [Description("JPEG 품질 (1-100). 0이면 PNG")] int quality = 75,
+        [Description("렌더링 너비 (픽셀, 최소 50)")] int width = 1080,
+        [Description("렌더링 높이 (픽셀, 최소 50)")] int height = 1920,
+        [Description("JPEG 품질 (1-100, 0이면 PNG)")] int quality = 75,
         CancellationToken ct = default)
     {
         var paramsObj = new { uxmlPath, width, height, quality };

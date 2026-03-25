@@ -11,9 +11,6 @@ public static class GetAvailableActionsTool
     public static async Task<string> Execute(UnityConnection connection, CancellationToken ct)
     {
         var result = await connection.SendRequestAsync("unity_get_available_actions", ct: ct);
-        var root = result.RootElement;
-        if (root.TryGetProperty("success", out var s) && !s.GetBoolean())
-            return $"Error: {root.GetProperty("error").GetString()}";
-        return root.GetProperty("data").GetRawText();
+        return ResponseFormatter.Format(result);
     }
 }

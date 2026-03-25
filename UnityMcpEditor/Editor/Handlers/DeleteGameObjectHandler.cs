@@ -11,8 +11,24 @@ namespace BreadPack.Mcp.Unity
         {
             var go = GameObjectResolver.Resolve(@params);
             var includeChildren = @params?["includeChildren"]?.Value<bool>() ?? true;
+            var dryRun = @params?["dryRun"]?.Value<bool>() ?? false;
             var name = go.name;
             var path = GameObjectResolver.GetPath(go);
+
+            if (dryRun)
+            {
+                var childCount = go.transform.childCount;
+                var componentCount = go.GetComponents<Component>().Length;
+                return new
+                {
+                    dryRun = true,
+                    target = name,
+                    path,
+                    childCount,
+                    componentCount,
+                    includeChildren
+                };
+            }
 
             if (!includeChildren && go.transform.childCount > 0)
             {

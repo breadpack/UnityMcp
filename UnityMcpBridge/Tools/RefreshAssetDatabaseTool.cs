@@ -14,9 +14,6 @@ public static class RefreshAssetDatabaseTool
     {
         var result = await connection.SendRequestAsync("unity_refresh_assets", ct: ct);
 
-        var root = result.RootElement;
-        if (root.TryGetProperty("success", out var s) && !s.GetBoolean())
-            return $"Error: {root.GetProperty("error").GetString()}";
-        return root.GetProperty("data").GetRawText();
+        return ResponseFormatter.Format(result);
     }
 }
