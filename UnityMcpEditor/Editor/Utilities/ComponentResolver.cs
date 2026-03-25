@@ -7,6 +7,8 @@ namespace BreadPack.Mcp.Unity
 {
     public static class ComponentResolver
     {
+        private static readonly Dictionary<string, Type> _typeCache = new();
+
         private static readonly string[] CommonNamespaces =
         {
             "UnityEngine",
@@ -23,10 +25,17 @@ namespace BreadPack.Mcp.Unity
             if (string.IsNullOrEmpty(componentType))
                 throw new ArgumentException("Component type name must not be null or empty.");
 
+            // Cache lookup
+            if (_typeCache.TryGetValue(componentType, out var cached))
+                return cached;
+
             // Step 1: Try full qualified name
             var type = Type.GetType(componentType);
             if (type != null && typeof(Component).IsAssignableFrom(type))
+            {
+                _typeCache[componentType] = type;
                 return type;
+            }
 
             // Step 2: Try common namespaces
             foreach (var ns in CommonNamespaces)
@@ -34,21 +43,41 @@ namespace BreadPack.Mcp.Unity
                 string fullName = ns + "." + componentType;
                 type = Type.GetType(fullName);
                 if (type != null && typeof(Component).IsAssignableFrom(type))
+                {
+                    _typeCache[componentType] = type;
                     return type;
+                }
             }
 
             // Step 3: Full assembly scan fallback
+            string bestMatch = null;
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 foreach (var t in GetTypesSafe(assembly))
                 {
-                    if (t.Name == componentType && typeof(Component).IsAssignableFrom(t))
+                    if (!typeof(Component).IsAssignableFrom(t))
+                        continue;
+
+                    if (t.Name == componentType)
+                    {
+                        _typeCache[componentType] = t;
                         return t;
+                    }
+
+                    if (bestMatch == null
+                        && t.Name.IndexOf(componentType, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        bestMatch = t.FullName;
+                    }
                 }
             }
 
-            throw new ArgumentException(
-                $"Component type '{componentType}' not found or is not a Component.");
+            var message = $"Component type '{componentType}' not found. " +
+                          "Use 'unity_get_component_details' to check available components.";
+            if (bestMatch != null)
+                message += $" Did you mean '{bestMatch}'?";
+
+            throw new ArgumentException(message);
         }
 
         public static Component GetComponent(GameObject go, string componentType, int index = 0)

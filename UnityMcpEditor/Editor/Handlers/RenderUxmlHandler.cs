@@ -55,10 +55,12 @@ namespace BreadPack.Mcp.Unity
 
             try
             {
-                // 레이아웃 + 렌더링 완료 대기
+                UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+
                 for (int i = 0; i < 10; i++)
                 {
                     window.Repaint();
+                    EditorApplication.QueuePlayerLoopUpdate();
                     await MainThreadDispatcher.DelayFrames(2);
                 }
 

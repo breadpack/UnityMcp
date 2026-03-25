@@ -17,10 +17,20 @@ namespace BreadPack.Mcp.Unity
         {
             int count = @params?["count"]?.Value<int>() ?? 50;
             string logType = @params?["logType"]?.ToString();
+            bool includeStackTrace = @params?["includeStackTrace"]?.Value<bool>() ?? false;
+
+            var logs = _buffer.GetLogs(count, logType);
+            if (!includeStackTrace)
+            {
+                foreach (var log in logs)
+                {
+                    log.StackTrace = null;
+                }
+            }
 
             return new
             {
-                logs = _buffer.GetLogs(count, logType),
+                logs,
                 totalBuffered = _buffer.TotalBuffered
             };
         }

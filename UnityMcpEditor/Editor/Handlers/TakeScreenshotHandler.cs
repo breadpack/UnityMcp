@@ -17,13 +17,24 @@ namespace BreadPack.Mcp.Unity
 
             int quality = @params?["quality"]?.Value<int>() ?? 75;
 
-            // Game View를 강제로 Repaint하여 최신 프레임이 렌더링되도록 함
             RepaintGameView();
+            UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+            EditorApplication.QueuePlayerLoopUpdate();
 
-            // 렌더링이 완료될 때까지 프레임 대기
             await MainThreadDispatcher.DelayFrames(1);
 
-            var tex = ScreenCapture.CaptureScreenshotAsTexture();
+            const int maxRetries = 3;
+            Texture2D tex = null;
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                tex = ScreenCapture.CaptureScreenshotAsTexture();
+                if (tex != null) break;
+
+                RepaintGameView();
+                EditorApplication.QueuePlayerLoopUpdate();
+                await MainThreadDispatcher.DelayFrames(1);
+            }
+
             if (tex == null)
                 throw new Exception("스크린샷 캡처에 실패했습니다. Game View가 활성화되어 있는지 확인하세요.");
 

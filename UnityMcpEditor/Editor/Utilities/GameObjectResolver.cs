@@ -18,18 +18,22 @@ namespace BreadPack.Mcp.Unity
                 if (obj is GameObject go) return go;
                 if (obj is Component comp) return comp.gameObject;
                 throw new ArgumentException(
-                    $"InstanceID {instanceId.Value} does not refer to a GameObject or Component.");
+                    $"No GameObject found with instanceId {instanceId.Value}. " +
+                    "The object may have been deleted. Use 'unity_get_hierarchy' to get current instanceIds.");
             }
 
             if (!string.IsNullOrEmpty(path))
             {
                 var go = FindByPath(path);
                 if (go != null) return go;
-                throw new ArgumentException($"GameObject not found at path: '{path}'");
+                throw new ArgumentException(
+                    $"GameObject not found at path '{path}'. " +
+                    "Use 'unity_get_hierarchy' to verify the correct path.");
             }
 
             throw new ArgumentException(
-                "Either 'path' or 'instanceId' must be specified to resolve a GameObject.");
+                "Either 'path' or 'instanceId' must be provided. " +
+                "Use 'unity_get_hierarchy' to find available GameObjects.");
         }
 
         public static GameObject ResolveParent(

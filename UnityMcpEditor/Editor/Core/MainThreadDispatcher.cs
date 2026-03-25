@@ -14,6 +14,13 @@ namespace BreadPack.Mcp.Unity
         private static readonly ConcurrentQueue<Action> _queue = new();
         private static bool _registered;
 
+        [InitializeOnLoadMethod]
+        private static void InitializeOnLoad()
+        {
+            _registered = false;
+            EnsureInitialized();
+        }
+
         public static void EnsureInitialized()
         {
             if (_registered) return;
@@ -35,6 +42,7 @@ namespace BreadPack.Mcp.Unity
                     tcs.SetException(ex);
                 }
             });
+            EditorApplication.QueuePlayerLoopUpdate();
             return tcs.Task;
         }
 
@@ -53,6 +61,7 @@ namespace BreadPack.Mcp.Unity
                     tcs.SetException(ex);
                 }
             });
+            EditorApplication.QueuePlayerLoopUpdate();
             return tcs.Task;
         }
 
@@ -71,25 +80,30 @@ namespace BreadPack.Mcp.Unity
                     tcs.SetException(ex);
                 }
             });
+            EditorApplication.QueuePlayerLoopUpdate();
             return tcs.Task;
         }
 
         /// <summary>
         /// 지정 프레임 수만큼 대기합니다. (UniTask.DelayFrame 대체)
         /// </summary>
-        public static Task DelayFrames(int frameCount)
+        public static Task DelayFrames(int frameCount, float timeoutSeconds = 10f)
         {
             var tcs = new TaskCompletionSource<bool>();
             int remaining = frameCount;
+            double startTime = EditorApplication.timeSinceStartup;
             void OnUpdate()
             {
-                if (--remaining <= 0)
+                if (--remaining <= 0 || EditorApplication.timeSinceStartup - startTime >= timeoutSeconds)
                 {
                     EditorApplication.update -= OnUpdate;
-                    tcs.SetResult(true);
+                    tcs.TrySetResult(true);
+                    return;
                 }
+                EditorApplication.QueuePlayerLoopUpdate();
             }
             EditorApplication.update += OnUpdate;
+            EditorApplication.QueuePlayerLoopUpdate();
             return tcs.Task;
         }
 
@@ -98,6 +112,11 @@ namespace BreadPack.Mcp.Unity
             while (_queue.TryDequeue(out var action))
             {
                 action();
+            }
+
+            if (!_queue.IsEmpty)
+            {
+                EditorApplication.QueuePlayerLoopUpdate();
             }
         }
     }

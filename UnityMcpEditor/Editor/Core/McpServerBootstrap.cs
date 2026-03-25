@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -22,61 +23,37 @@ namespace BreadPack.Mcp.Unity
         public static bool IsRunning => _isRunning;
         public static int Port => _actualPort;
 
+        private const string PortPrefsKey = "UnityMcp_LastPort";
+
         static McpServerBootstrap()
         {
             EditorApplication.quitting += StopServer;
             EditorApplication.delayCall += StartServer;
+            AssemblyReloadEvents.beforeAssemblyReload += StopServer;
+            AssemblyReloadEvents.afterAssemblyReload += () => EditorApplication.delayCall += StartServer;
         }
 
         public static void StartServer()
         {
             if (_isRunning) return;
 
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                EditorApplication.delayCall += StartServer;
+                return;
+            }
+
             try
             {
                 MainThreadDispatcher.EnsureInitialized();
 
-                _logBuffer = new ConsoleLogBuffer();
-                _logBuffer.Start();
-
-                _dispatcher = new McpRequestDispatcher();
-                _dispatcher.Register(new GetScreenHandler());
-                _dispatcher.Register(new GetUiTreeHandler());
-                _dispatcher.Register(new GetAvailableActionsHandler());
-                _dispatcher.Register(new TakeScreenshotHandler());
-                _dispatcher.Register(new GetHierarchyHandler());
-                _dispatcher.Register(new GetConsoleLogsHandler(_logBuffer));
-                _dispatcher.Register(new RefreshAssetDatabaseHandler());
-                _dispatcher.Register(new RenderUxmlHandler());
-                _dispatcher.Register(new PlayModeHandler());
-
-                // Phase 1: Scene Manipulation
-                _dispatcher.Register(new CreateGameObjectHandler());
-                _dispatcher.Register(new DeleteGameObjectHandler());
-                _dispatcher.Register(new SetTransformHandler());
-                _dispatcher.Register(new ReparentGameObjectHandler());
-                _dispatcher.Register(new AddComponentHandler());
-                _dispatcher.Register(new RemoveComponentHandler());
-                _dispatcher.Register(new SetPropertyHandler());
-
-                // Phase 2: Asset
-                _dispatcher.Register(new InstantiatePrefabHandler());
-                _dispatcher.Register(new SetAssetReferenceHandler());
-
-                // Inspection
-                _dispatcher.Register(new GetAssetHierarchyHandler());
-                _dispatcher.Register(new GetComponentDetailsHandler());
-
-#if UNITY_MCP_ADDRESSABLES
-                // Phase 3: Addressable
-                _dispatcher.Register(new AddressableAddHandler());
-                _dispatcher.Register(new AddressableSetAddressHandler());
-#endif
+                RegisterHandlers();
 
                 _actualPort = FindAvailablePort(BasePort, MaxPortRetries);
                 _server = new McpTcpServer(_actualPort, HandleRequestAsync);
                 _server.Start();
                 _isRunning = true;
+                EditorPrefs.SetInt(PortPrefsKey, _actualPort);
 
                 Debug.Log($"[MCP] Server started on port {_actualPort}");
             }
@@ -104,20 +81,63 @@ namespace BreadPack.Mcp.Unity
             StartServer();
         }
 
+        private static void RegisterHandlers()
+        {
+            _logBuffer = new ConsoleLogBuffer();
+            _logBuffer.Start();
+            _dispatcher = new McpRequestDispatcher();
+
+            // 특수 핸들러 (생성자 파라미터 필요)
+            _dispatcher.Register(new GetConsoleLogsHandler(_logBuffer));
+
+            // 자동 등록: 파라미터 없는 생성자를 가진 IRequestHandler/IAsyncRequestHandler
+            foreach (var type in typeof(McpServerBootstrap).Assembly.GetTypes())
+            {
+                if (type.IsAbstract || type.IsInterface) continue;
+                if (type == typeof(GetConsoleLogsHandler)) continue; // 이미 등록됨
+
+                if (typeof(IRequestHandler).IsAssignableFrom(type) || typeof(IAsyncRequestHandler).IsAssignableFrom(type))
+                {
+                    var ctor = type.GetConstructor(Type.EmptyTypes);
+                    if (ctor != null)
+                    {
+                        var handler = ctor.Invoke(null);
+                        if (handler is IRequestHandler rh) _dispatcher.Register(rh);
+                        else if (handler is IAsyncRequestHandler arh) _dispatcher.Register(arh);
+                    }
+                }
+            }
+        }
+
+        private static bool TryListenPort(int port)
+        {
+            try
+            {
+                using (var listener = new System.Net.Sockets.TcpListener(
+                    System.Net.IPAddress.Loopback, port))
+                {
+                    listener.Start();
+                    listener.Stop();
+                }
+                return true;
+            }
+            catch (System.Net.Sockets.SocketException)
+            {
+                return false;
+            }
+        }
+
         private static int FindAvailablePort(int basePort, int maxRetries)
         {
+            int lastPort = EditorPrefs.GetInt(PortPrefsKey, -1);
+            if (lastPort >= basePort && lastPort < basePort + maxRetries && TryListenPort(lastPort))
+                return lastPort;
+
             for (int i = 0; i < maxRetries; i++)
             {
                 int port = basePort + i;
-                try
-                {
-                    var listener = new System.Net.Sockets.TcpListener(
-                        System.Net.IPAddress.Loopback, port);
-                    listener.Start();
-                    listener.Stop();
-                    return port;
-                }
-                catch (System.Net.Sockets.SocketException) { /* 포트 사용 중, 다음 시도 */ }
+                if (port == lastPort) continue;
+                if (TryListenPort(port)) return port;
             }
             throw new Exception($"No available port found in range {basePort}-{basePort + maxRetries - 1}");
         }

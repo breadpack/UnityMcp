@@ -56,19 +56,16 @@ namespace BreadPack.Mcp.Unity
                         : prop.enumValueIndex.ToString();
                 case SerializedPropertyType.Color:
                     var c = prop.colorValue;
-                    return new Dictionary<string, float>
-                        { ["r"] = c.r, ["g"] = c.g, ["b"] = c.b, ["a"] = c.a };
+                    return new[] { c.r, c.g, c.b, c.a };
                 case SerializedPropertyType.Vector2:
                     var v2 = prop.vector2Value;
-                    return new Dictionary<string, float> { ["x"] = v2.x, ["y"] = v2.y };
+                    return new[] { v2.x, v2.y };
                 case SerializedPropertyType.Vector3:
                     var v3 = prop.vector3Value;
-                    return new Dictionary<string, float>
-                        { ["x"] = v3.x, ["y"] = v3.y, ["z"] = v3.z };
+                    return new[] { v3.x, v3.y, v3.z };
                 case SerializedPropertyType.Vector4:
                     var v4 = prop.vector4Value;
-                    return new Dictionary<string, float>
-                        { ["x"] = v4.x, ["y"] = v4.y, ["z"] = v4.z, ["w"] = v4.w };
+                    return new[] { v4.x, v4.y, v4.z, v4.w };
                 case SerializedPropertyType.Rect:
                     var r = prop.rectValue;
                     return new Dictionary<string, float>
@@ -107,8 +104,7 @@ namespace BreadPack.Mcp.Unity
                     return prop.intValue;
                 case SerializedPropertyType.Quaternion:
                     var q = prop.quaternionValue;
-                    return new Dictionary<string, float>
-                        { ["x"] = q.x, ["y"] = q.y, ["z"] = q.z, ["w"] = q.w };
+                    return new[] { q.x, q.y, q.z, q.w };
 
                 // Generic (struct 등) — 자식 프로퍼티를 재귀 탐색
                 case SerializedPropertyType.Generic:

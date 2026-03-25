@@ -16,10 +16,13 @@ namespace BreadPack.Mcp.Unity
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         };
 
+        private const int MaxPayloadSize = 10 * 1024 * 1024; // 10 MB
+
         private TcpListener _listener;
         private TcpClient _client;
         private NetworkStream _stream;
         private CancellationTokenSource _cts;
+        private readonly SemaphoreSlim _sendLock = new(1, 1);
         private readonly int _port;
         private readonly Func<McpRequest, Task<McpResponse>> _handler;
 
@@ -68,6 +71,12 @@ namespace BreadPack.Mcp.Unity
                     int length = (lengthBuffer[0] << 24) | (lengthBuffer[1] << 16)
                                | (lengthBuffer[2] << 8) | lengthBuffer[3];
 
+                    if (length <= 0 || length > MaxPayloadSize)
+                    {
+                        UnityEngine.Debug.LogError($"[MCP] Invalid payload size: {length} bytes (max {MaxPayloadSize}). Disconnecting.");
+                        break;
+                    }
+
                     var payload = new byte[length];
                     if (!await ReadExactAsync(stream, payload, length, ct)) break;
 
@@ -78,7 +87,12 @@ namespace BreadPack.Mcp.Unity
                     var response = await _handler(request);
                     await SendAsync(JsonConvert.SerializeObject(response, CamelCaseSettings));
                 }
-                catch (Exception) { break; }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    UnityEngine.Debug.LogError($"[MCP] ReadLoop error: {ex.Message}");
+                    break;
+                }
             }
         }
 
@@ -97,15 +111,23 @@ namespace BreadPack.Mcp.Unity
         private async Task SendAsync(string json)
         {
             if (_stream == null || !_stream.CanWrite) return;
-            var payload = Encoding.UTF8.GetBytes(json);
-            var length = new byte[4];
-            length[0] = (byte)(payload.Length >> 24);
-            length[1] = (byte)(payload.Length >> 16);
-            length[2] = (byte)(payload.Length >> 8);
-            length[3] = (byte)(payload.Length);
-            await _stream.WriteAsync(length, 0, 4);
-            await _stream.WriteAsync(payload, 0, payload.Length);
-            await _stream.FlushAsync();
+            await _sendLock.WaitAsync();
+            try
+            {
+                var payload = Encoding.UTF8.GetBytes(json);
+                var length = new byte[4];
+                length[0] = (byte)(payload.Length >> 24);
+                length[1] = (byte)(payload.Length >> 16);
+                length[2] = (byte)(payload.Length >> 8);
+                length[3] = (byte)(payload.Length);
+                await _stream.WriteAsync(length, 0, 4);
+                await _stream.WriteAsync(payload, 0, payload.Length);
+                await _stream.FlushAsync();
+            }
+            finally
+            {
+                _sendLock.Release();
+            }
         }
 
         public void Dispose()
@@ -115,6 +137,7 @@ namespace BreadPack.Mcp.Unity
             _client?.Close();
             _listener?.Stop();
             _cts?.Dispose();
+            _sendLock.Dispose();
         }
     }
 }

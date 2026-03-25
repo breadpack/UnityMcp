@@ -8,7 +8,7 @@ namespace UnityMcpBridge.Tools;
 public static class AddressableSetAddressTool
 {
     [McpServerTool(Name = "unity_addressable_set_address"),
-     Description("Addressable Asset의 주소와 레이블을 설정합니다")]
+     Description("Addressable Asset의 주소와 레이블을 설정합니다 (Addressable 패키지 필요)")]
     public static async Task<string> Execute(
         UnityConnection connection,
         [Description("설정할 주소")] string address,

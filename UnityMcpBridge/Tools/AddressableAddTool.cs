@@ -8,7 +8,7 @@ namespace UnityMcpBridge.Tools;
 public static class AddressableAddTool
 {
     [McpServerTool(Name = "unity_addressable_add"),
-     Description("Asset을 Addressable 그룹에 등록합니다")]
+     Description("Asset을 Addressable 그룹에 등록합니다 (Addressable 패키지 필요)")]
     public static async Task<string> Execute(
         UnityConnection connection,
         [Description("Asset 경로")] string? assetPath = null,
