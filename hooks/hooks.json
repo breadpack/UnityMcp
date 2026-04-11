@@ -1,0 +1,49 @@
+{
+  "hooks": [
+    {
+      "event": "SessionStart",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/check-unity.js --mode=session-start"
+        }
+      ]
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": {
+        "toolName": "mcp__unity-bridge__*"
+      },
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/check-unity.js --mode=pre-tool --check-compile=${userConfig.check_compile_status} --check-reload=${userConfig.check_domain_reload}"
+        }
+      ]
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": {
+        "toolName": "mcp__unity-bridge__unity_create_gameobject|mcp__unity-bridge__unity_delete_gameobject|mcp__unity-bridge__unity_add_component|mcp__unity-bridge__unity_remove_component|mcp__unity-bridge__unity_set_property|mcp__unity-bridge__unity_set_transform|mcp__unity-bridge__unity_reparent_gameobject|mcp__unity-bridge__unity_instantiate_prefab"
+      },
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/post-tool-check.js --auto-save=${userConfig.auto_save_scene}"
+        }
+      ]
+    },
+    {
+      "event": "PostToolUseFailure",
+      "matcher": {
+        "toolName": "mcp__unity-bridge__*"
+      },
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/check-unity.js --mode=failure-diagnosis"
+        }
+      ]
+    }
+  ]
+}
