@@ -22,6 +22,22 @@ AI Agent ←(stdio/MCP JSON-RPC)→ UnityMcpBridge ←(TCP localhost:9876, lengt
 - `MainThreadDispatcher`는 `EditorApplication.update` 콜백 큐를 사용하여 메인 스레드 실행 보장
 - 포트 자동 탐색: 9876~9885 범위에서 사용 가능한 포트 선택 (환경변수 `UNITY_TCP_PORT`로 커스텀 가능)
 
+## Plugin Structure
+
+이 저장소는 Claude Code 플러그인으로도 동작한다 (`.claude-plugin/plugin.json` v0.3.0).
+
+- **agents/** — 전문 에이전트 3종 (scene-architect, debugger, asset-manager). 각 에이전트는 특정 skills와 `mcp__unity-bridge__*` 도구를 번들한다.
+- **hooks/hooks.json** — SessionStart/PreToolUse/PostToolUse/PostToolUseFailure 훅. `scripts/check-unity.js`를 호출해 Unity 컴파일/도메인 리로드 상태를 감지하고, 진행 중이면 대기 루프로 완료를 기다린다.
+- **scripts/** — 훅 스크립트와 브릿지 실행 래퍼 (`run-bridge.js`는 `${CLAUDE_PLUGIN_DATA}/bin/`의 번들 바이너리 → GitHub Release lazy download → `npx -y unity-mcp-bridge` 순으로 fallback).
+- **skills/** — 워크플로우 가이드 6종 (유지).
+
+플러그인 매니페스트의 `userConfig`로 `unity_tcp_port`, `auto_save_scene`, `check_compile_status`, `check_domain_reload`, `max_wait_seconds`를 사용자가 설치 시 설정한다. 이 값들은 `${userConfig.xxx}` 치환으로 `mcpServers.env`와 `hooks` 커맨드 인자에 전달된다.
+
+### 새 hook 스크립트 추가 시
+- TCP 통신은 `scripts/unity-client.js`의 `tcpPing`/`sendRequest`/`getEditorState`를 재사용
+- Bridge가 기동 전/중단 상태일 수 있으므로 Editor TCP 서버(9876)와 직접 통신한다 (Bridge 경유 X)
+- 에러는 stderr에 `[Unity MCP] ...` 형식으로 출력, exit code는 차단 목적(1) vs 정보성(0) 구분
+
 ## Build & Run
 
 ```bash
