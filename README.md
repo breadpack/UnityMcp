@@ -23,6 +23,37 @@ Two components are required:
 | **UnityMcpBridge** | .NET MCP server (stdio ↔ TCP) | `npx` / `dotnet tool` / clone |
 | **UnityMcpEditor** | Unity Editor plugin (TCP server + handlers) | UPM git URL |
 
+## Claude Code 플러그인으로 설치 (권장)
+
+Claude Code에서 한 줄로 설치:
+
+```
+/plugin install --from github:breadpack/UnityMcp
+```
+
+또는 프로젝트 `.claude/settings.json`에 등록:
+
+```json
+{
+  "enabledPlugins": {
+    "unity-mcp": {
+      "source": {
+        "source": "github",
+        "repo": "breadpack/UnityMcp"
+      }
+    }
+  }
+}
+```
+
+설치 시 포트, 자동 저장, 컴파일/리로드 체크 등의 옵션을 프롬프트로 설정할 수 있다.
+
+포함 내용:
+- MCP 서버 (unity-bridge) — 45+ Unity 도구
+- Skills 6개 — 워크플로우 가이드
+- Agents 3개 — unity-scene-architect, unity-debugger, unity-asset-manager
+- Hooks — 컴파일/도메인 리로드 자동 감지 및 대기
+
 ## Quick Start
 
 ### Step 1. Install MCP Bridge
