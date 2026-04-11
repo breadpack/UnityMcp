@@ -1,7 +1,7 @@
 {
   "name": "unity-mcp",
   "description": "AI 에이전트가 Unity Editor를 제어하는 MCP 브릿지 — 씬 편집, 에셋 관리, 빌드 자동화",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "breadpack",
     "url": "https://github.com/breadpack"
@@ -9,6 +9,37 @@
   "homepage": "https://github.com/breadpack/UnityMcp",
   "repository": "https://github.com/breadpack/UnityMcp",
   "license": "MIT",
-  "keywords": ["unity", "mcp", "gamedev", "editor"],
-  "mcpServers": "./.mcp.json"
+  "keywords": ["unity", "mcp", "gamedev", "editor", "scene", "build"],
+  "mcpServers": {
+    "unity-bridge": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run-bridge.js"],
+      "env": {
+        "UNITY_TCP_PORT": "${userConfig.unity_tcp_port}",
+        "UNITY_MAX_WAIT_SEC": "${userConfig.max_wait_seconds}"
+      }
+    }
+  },
+  "userConfig": {
+    "unity_tcp_port": {
+      "description": "Unity TCP 포트 (기본: 9876)",
+      "sensitive": false
+    },
+    "auto_save_scene": {
+      "description": "씬 변경 후 자동 저장 여부 (true/false, 기본: false)",
+      "sensitive": false
+    },
+    "check_compile_status": {
+      "description": "도구 호출 전 컴파일 상태 체크 여부 (true/false, 기본: true)",
+      "sensitive": false
+    },
+    "check_domain_reload": {
+      "description": "도구 호출 전 도메인 리로드 상태 체크 여부 (true/false, 기본: true)",
+      "sensitive": false
+    },
+    "max_wait_seconds": {
+      "description": "컴파일/리로드 대기 최대 시간 (초, 기본: 60)",
+      "sensitive": false
+    }
+  }
 }
