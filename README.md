@@ -23,9 +23,23 @@ Two components are required:
 | **UnityMcpBridge** | .NET MCP server (stdio ↔ TCP) | `npx` / `dotnet tool` / clone |
 | **UnityMcpEditor** | Unity Editor plugin (TCP server + handlers) | UPM git URL |
 
-## Claude Code 플러그인으로 설치 (권장)
+## Claude Code Plugin 설치 (권장)
 
-Claude Code에서 한 줄로 설치:
+Claude Code에서 플러그인으로 설치하면 MCP 서버, Skills, Agents, Hooks가 한 번에 구성됩니다.
+
+### Step 1. Unity Editor 패키지 설치
+
+> Unity 6000.0+ 필요
+
+Unity Editor > Window > Package Manager > **+** > **Add package from git URL**:
+
+```
+https://github.com/breadpack/UnityMcp.git?path=UnityMcpEditor
+```
+
+### Step 2. Claude Code에서 플러그인 설치
+
+Claude Code 세션 내에서:
 
 ```
 /plugin install --from github:breadpack/UnityMcp
@@ -46,13 +60,65 @@ Claude Code에서 한 줄로 설치:
 }
 ```
 
-설치 시 포트, 자동 저장, 컴파일/리로드 체크 등의 옵션을 프롬프트로 설정할 수 있다.
+설치 시 아래 옵션을 프롬프트로 설정할 수 있습니다:
 
-포함 내용:
-- MCP 서버 (unity-bridge) — 45+ Unity 도구
-- Skills 6개 — 워크플로우 가이드
-- Agents 3개 — unity-scene-architect, unity-debugger, unity-asset-manager
-- Hooks — 컴파일/도메인 리로드 자동 감지 및 대기
+| 옵션 | 설명 | 기본 |
+|------|------|------|
+| `unity_tcp_port` | Unity TCP 포트 | `9876` |
+| `auto_save_scene` | 씬 변경 후 자동 저장 | `false` |
+| `check_compile_status` | 도구 호출 전 컴파일 상태 체크 | `true` |
+| `check_domain_reload` | 도구 호출 전 도메인 리로드 상태 체크 | `true` |
+| `max_wait_seconds` | 컴파일/리로드 대기 최대 시간(초) | `60` |
+
+### Step 3. 검증
+
+Unity Editor를 연 상태에서 Claude Code에 다음과 같이 요청:
+
+> "Unity에 ping을 보내줘"
+
+### 포함 구성요소
+
+**MCP 서버 (unity-bridge)** — 45+ Unity 도구 (씬, 컴포넌트, 에셋, 빌드 등)
+
+**Agents 3종** — 특정 도메인 전문 에이전트
+| Agent | 역할 |
+|-------|------|
+| `unity-scene-architect` | 씬 설계, GameObject/컴포넌트/UI 구성 |
+| `unity-debugger` | 에러 추적, Play Mode 검사, 성능 분석 |
+| `unity-asset-manager` | Material, Prefab, Addressable, 빌드 관리 |
+
+**Skills 6종** — 워크플로우 가이드 (슬래시 커맨드)
+| Skill | 명령어 |
+|-------|--------|
+| Scene Setup | `/unity-mcp:unity-scene-setup` |
+| UI Build | `/unity-mcp:unity-ui-build` |
+| Material Setup | `/unity-mcp:unity-material-setup` |
+| Prefab Workflow | `/unity-mcp:unity-prefab-workflow` |
+| Debug | `/unity-mcp:unity-debug` |
+| Build & Deploy | `/unity-mcp:unity-build-deploy` |
+
+**Hooks** — 자동 상태 관리
+- `SessionStart`: Unity 연결 상태 체크 및 프로젝트 정보 출력
+- `PreToolUse`: 도구 호출 전 컴파일/도메인 리로드 감지. 진행 중이면 대기 후 재시도.
+- `PostToolUse`: 씬 변경 도구 실행 후 `auto_save_scene=true` 시 자동 저장.
+- `PostToolUseFailure`: 도구 실행 실패 시 연결 복구 진단.
+
+### 사용 예시
+
+```
+> @unity-scene-architect 3D 플랫포머 기본 씬을 만들어줘. 바닥, 플레이어, 카메라.
+
+> @unity-debugger 현재 씬의 에러 원인을 찾아줘.
+
+> /unity-mcp:unity-build-deploy
+> Windows 타겟으로 빌드해줘.
+```
+
+---
+
+## 수동 설치 (플러그인 없이)
+
+플러그인을 사용하지 않고 개별 도구에서 MCP 서버만 쓰고 싶다면:
 
 ## Quick Start
 
@@ -205,56 +271,6 @@ Example with custom port:
   }
 }
 ```
-
-## Claude Code Plugin (Skills 포함)
-
-Claude Code에서 스킬(슬래시 커맨드)과 함께 사용하려면 플러그인으로 설치할 수 있습니다.
-
-### Plugin 설치
-
-**방법 A: GitHub에서 설치 (권장)**
-
-```bash
-claude plugin install --from https://github.com/breadpack/UnityMcp
-```
-
-**방법 B: 로컬 클론 후 설치**
-
-```bash
-git clone https://github.com/breadpack/UnityMcp.git
-claude --plugin-dir ./UnityMcp
-```
-
-> Plugin 설치 시 MCP 서버 설정(`.mcp.json`)이 자동으로 적용되므로, Step 3의 수동 설정은 불필요합니다.
-> Unity Editor 패키지(Step 2)는 별도로 설치해야 합니다.
-
-### 제공 Skills
-
-Plugin을 설치하면 다음 슬래시 커맨드를 사용할 수 있습니다:
-
-| Skill | 명령어 | 설명 |
-|-------|--------|------|
-| **Scene Setup** | `/unity-mcp:unity-scene-setup` | 씬 구성 워크플로우 — GameObject 생성, 계층 구조, 컴포넌트 설정 |
-| **UI Build** | `/unity-mcp:unity-ui-build` | UGUI(Canvas) 및 UI Toolkit UI 구축 가이드 |
-| **Material Setup** | `/unity-mcp:unity-material-setup` | Material 생성, 셰이더 프로퍼티 설정 레퍼런스 |
-| **Prefab Workflow** | `/unity-mcp:unity-prefab-workflow` | Prefab 인스턴스화, 편집 모드, 저장 |
-| **Debug** | `/unity-mcp:unity-debug` | 콘솔 로그, 스크린샷, Animator 상태 검사 |
-| **Build & Deploy** | `/unity-mcp:unity-build-deploy` | 빌드 실행, Project Settings 관리 |
-
-### Plugin 사용 예시
-
-```
-> /unity-mcp:unity-scene-setup
-> 3D 플랫포머 게임의 기본 씬을 구성해줘.
-> 바닥(Plane), 플레이어(Capsule+Rigidbody+CapsuleCollider), 카메라를 배치해줘.
-```
-
-```
-> /unity-mcp:unity-debug
-> 현재 씬에서 에러가 발생하는 원인을 찾아줘.
-```
-
----
 
 ## Available Tools (35)
 
