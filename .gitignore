@@ -33,3 +33,6 @@ UnityMcpEditor/**/*.sln
 npm/bin/UnityMcpBridge*
 npm/bin/_tmp*
 node_modules/
+
+# Plugin runtime data (lazy-downloaded binaries, caches)
+.data/
