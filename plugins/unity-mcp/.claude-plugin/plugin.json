@@ -13,11 +13,7 @@
   "mcpServers": {
     "unity-bridge": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run-bridge.js"],
-      "env": {
-        "UNITY_TCP_PORT": "${userConfig.unity_tcp_port}",
-        "UNITY_MAX_WAIT_SEC": "${userConfig.max_wait_seconds}"
-      }
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run-bridge.js"]
     }
   },
   "userConfig": {
