@@ -1,0 +1,14 @@
+{
+  "name": "breadpack-unitymcp",
+  "owner": {
+    "name": "BreadPack"
+  },
+  "plugins": [
+    {
+      "name": "unity-mcp",
+      "source": ".",
+      "description": "AI 에이전트가 Unity Editor를 제어하는 MCP 브릿지",
+      "version": "0.3.0"
+    }
+  ]
+}
