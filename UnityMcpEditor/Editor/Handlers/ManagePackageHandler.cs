@@ -50,8 +50,7 @@ namespace BreadPack.Mcp.Unity
                 name = p.name,
                 version = p.version,
                 displayName = p.displayName,
-                source = p.source.ToString(),
-                status = p.status.ToString()
+                source = p.source.ToString()
             }).ToList();
 
             return new { action = "list", count = packages.Count, packages };
