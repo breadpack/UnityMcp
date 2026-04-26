@@ -38,6 +38,16 @@ AI Agent ←(stdio/MCP JSON-RPC)→ UnityMcpBridge ←(TCP localhost:9876, lengt
 - Bridge가 기동 전/중단 상태일 수 있으므로 Editor TCP 서버(9876)와 직접 통신한다 (Bridge 경유 X)
 - 에러는 stderr에 `[Unity MCP] ...` 형식으로 출력, exit code는 차단 목적(1) vs 정보성(0) 구분
 
+## Versioning Policy
+
+`plugins/unity-mcp/.claude-plugin/plugin.json`의 `version` 필드는 **patch 단위 증가가 기본**이다 (예: 0.6.0 → 0.6.1 → 0.6.2).
+
+- **Patch (기본)**: 신규 기능 추가, 핸들러/도구 추가, 버그 수정, 리팩토링 — 대부분의 머지가 여기 해당
+- **Minor**: 외부 통합 방식이 바뀌는 큰 변화 (MCP 프로토콜 시그니처 변경, asmdef 구조 재편 등 사용자 설정·다른 도구가 영향받는 경우)
+- **Major**: 0.x → 1.0 안정화, 호환되지 않는 마이그레이션이 필요한 변경
+
+근거: 8개 입력 도구를 3 phase로 머지하면서 매번 minor를 올린 결과 0.3.1 → 0.6.0이 되어 변화 폭에 비해 버전이 빠르게 소진되었다. 0.x 단계에서는 SemVer 엄격 해석보다 변화 무게에 비례하는 패치 정책이 적합하다.
+
 ## Build & Run
 
 ```bash
