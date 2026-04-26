@@ -592,6 +592,7 @@ git commit -m "feat(input): add TargetResolver covering uGUI/UI Toolkit/3D/scree
 ```csharp
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.LowLevel;
 
 namespace BreadPack.Mcp.Unity.Input
