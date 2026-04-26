@@ -9,13 +9,20 @@ namespace BreadPack.Mcp.Unity.Input
 
     public static class InputSystemGuard
     {
-        public static void EnsureReady(TargetKind kind)
+        // 타겟 해석 전에 호출. Edit Mode/컴파일 중에 씬 traversal하지 않도록 차단.
+        public static void EnsurePlayMode()
         {
             if (!EditorApplication.isPlaying)
                 throw new System.Exception("입력 시뮬레이션은 Play Mode에서만 가능합니다. 먼저 unity_play_mode로 진입하세요.");
 
             if (EditorApplication.isCompiling)
                 throw new System.Exception("컴파일이 끝난 후 다시 시도하세요.");
+        }
+
+        // 타겟 해석 후 호출. 타겟 종류별 추가 검증.
+        public static void EnsureReady(TargetKind kind)
+        {
+            EnsurePlayMode();
 
             if (kind == TargetKind.UGui)
             {

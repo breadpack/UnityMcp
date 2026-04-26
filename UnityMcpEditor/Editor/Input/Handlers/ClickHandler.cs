@@ -22,6 +22,7 @@ namespace BreadPack.Mcp.Unity.Input
                 _ => MouseButton.Left
             };
 
+            InputSystemGuard.EnsurePlayMode();
             var resolved = TargetResolver.Resolve(ts);
             InputSystemGuard.EnsureReady(resolved.Kind);
             VirtualInputDevices.EnsureRegistered();
@@ -40,11 +41,21 @@ namespace BreadPack.Mcp.Unity.Input
             return await ResultSnapshot.CaptureAsync(opts, () => BuildResolvedJson(resolved));
         }
 
+        // spec §6.4: ugui | uitk | world | screen
+        private static string KindLabel(TargetKind k) => k switch
+        {
+            TargetKind.UGui => "ugui",
+            TargetKind.UiToolkit => "uitk",
+            TargetKind.World => "world",
+            TargetKind.Screen => "screen",
+            _ => k.ToString().ToLowerInvariant()
+        };
+
         internal static JObject BuildResolvedJson(ResolvedTarget r)
         {
             return new JObject
             {
-                ["type"] = r.Kind.ToString().ToLowerInvariant(),
+                ["type"] = KindLabel(r.Kind),
                 ["path"] = r.ResolvedPath,
                 ["screen"] = new JObject
                 {

@@ -28,9 +28,12 @@ namespace BreadPack.Mcp.Unity.Input
                 _ => MouseButton.Left
             };
 
+            InputSystemGuard.EnsurePlayMode();
             var fromR = TargetResolver.Resolve(fromSpec);
             var toR = TargetResolver.Resolve(toSpec);
             InputSystemGuard.EnsureReady(fromR.Kind);
+            // from/to가 다른 Kind면 to에 대해서도 검증 (uGUI ↔ World 혼합 드래그)
+            if (toR.Kind != fromR.Kind) InputSystemGuard.EnsureReady(toR.Kind);
             VirtualInputDevices.EnsureRegistered();
 
             // 경유점 빌드

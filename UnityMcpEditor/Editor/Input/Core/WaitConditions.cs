@@ -62,6 +62,9 @@ namespace BreadPack.Mcp.Unity.Input
 
         private static bool CheckObjectActive(JObject spec)
         {
+            // objectActive/Exists는 GameObject로 해석 가능한 target이 필수.
+            // position/worldPoint는 GameObject가 아니라 단순 좌표라 해당 조건이 평가 불가능.
+            if (spec["target"] == null) return false;
             try
             {
                 var ts = TargetSpec.Parse(spec);
@@ -74,6 +77,7 @@ namespace BreadPack.Mcp.Unity.Input
 
         private static bool CheckObjectExists(JObject spec)
         {
+            if (spec["target"] == null) return false;
             try
             {
                 var ts = TargetSpec.Parse(spec);

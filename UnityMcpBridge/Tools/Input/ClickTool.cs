@@ -52,14 +52,19 @@ public static class ClickTool
     internal static IEnumerable<AIContent> BuildResult(JsonElement root)
     {
         if (root.TryGetProperty("success", out var s) && !s.GetBoolean())
-            return new AIContent[] { new TextContent($"Error: {root.GetProperty("error").GetString()}") };
+        {
+            var err = root.TryGetProperty("error", out var e) ? e.GetString() : "(unknown error)";
+            return new AIContent[] { new TextContent($"Error: {err}") };
+        }
 
-        var data = root.GetProperty("data");
+        if (!root.TryGetProperty("data", out var data))
+            return new AIContent[] { new TextContent(root.GetRawText()) };
+
         var contents = new List<AIContent>();
 
         if (data.TryGetProperty("screenshotBase64", out var b64) && b64.GetString() is string base64 && base64.Length > 0)
         {
-            var mime = data.GetProperty("mimeType").GetString() ?? "image/jpeg";
+            var mime = data.TryGetProperty("mimeType", out var m) ? m.GetString() ?? "image/jpeg" : "image/jpeg";
             contents.Add(new DataContent(Convert.FromBase64String(base64), mime));
         }
 
