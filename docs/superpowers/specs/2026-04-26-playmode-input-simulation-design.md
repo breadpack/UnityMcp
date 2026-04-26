@@ -76,7 +76,7 @@ UnityMcpBridge/Tools/Input/
 ### 4.3 어셈블리/의존성
 
 - Editor 측은 `com.unity.inputsystem` 패키지 의존. asmdef에 `Unity.InputSystem` 참조 추가.
-- 패키지 미설치 환경에서도 다른 핸들러는 정상 동작해야 하므로, `InputSystemGuard`가 reflection으로 감지하고 친절한 에러 반환(코드 컴파일 자체는 패키지가 있어야 가능 — 별도 asmdef로 분리하거나, `InputSystem`을 optional reference로 처리. **결정: Editor asmdef에 `versionDefines`로 `com.unity.inputsystem`을 조건 컴파일** — 미설치 시 8개 핸들러 등록을 스킵).
+- 패키지 미설치 환경에서도 다른 핸들러는 정상 동작해야 하므로, **Editor asmdef에 `versionDefines`로 `com.unity.inputsystem`을 조건 컴파일**한다. 미설치 시 8개 입력 핸들러 등록 자체를 스킵하고 `McpServerBootstrap`은 다른 핸들러만 등록. 사용자가 입력 도구를 호출하면 "도구를 찾을 수 없음" 에러가 자연스럽게 반환됨.
 
 ## 5. 데이터 흐름
 
@@ -108,12 +108,12 @@ UnityMcpBridge/Tools/Input/
 
 ### 5.2 동작별 입력 시퀀스
 
-- **Drag**: `MouseMove(from)` → `MouseDown` → 경유점 N개에 대해 `MouseMove + DelayFrames(1)` → `MouseUp`. 경유점 미지정 시 `from→to` 직선을 `durationMs / frameTime`개로 분할.
+- **Drag**: `MouseMove(from)` → `MouseDown` → 경유점 N개에 대해 `MouseMove + DelayFrames(1)` → `MouseUp`. 경유점 미지정 시 `from→to` 직선을 분할(분할 수 = `max(2, durationMs / 16)` — 16ms는 60fps 기준 한 프레임 가정).
 - **Hold**: `MouseMove` → `MouseDown` → `Delay(holdMs)` → `MouseUp`.
 - **Swipe**: `direction`/`distance`로 `to` 계산 후 Drag와 동일.
 - **Pinch**: `Touchscreen.current` 가상 디바이스에 두 finger touch (`primaryTouch` + `touches[1]`)를 동시에 이동. `startSpread`/`endSpread`로 두 손가락 거리 보간.
 - **Key**: `Keyboard` 가상 디바이스에 `KeyControl` press/down/up. `modifiers`는 별도 keypress 이벤트로 선행/후행.
-- **TypeText**: 각 문자에 대해 KeyDown→KeyUp + `TextEvent`(InputSystem `IMECompositionEvent`/`onTextInput`) — uGUI `TMP_InputField`/`InputField`는 `OnUpdateSelected`에서 `Event.current.character`를 읽으므로, `Keyboard.current.onTextInput` 경로 또는 `InputEventTrace`로 텍스트 이벤트 큐잉. `intervalMs` 간격.
+- **TypeText**: 각 문자에 대해 (1) 해당 키의 KeyDown→KeyUp, (2) 가상 `Keyboard` 디바이스의 `onTextInput` 콜백 invoke (reflection으로 backing delegate 직접 호출). `intervalMs` 간격으로 반복. ASCII 우선 — 한글/IME는 §10 미해결 사항.
 - **Scroll**: `Mouse.current.scroll` 컨트롤에 `Vector2(dx, dy)` 변경 이벤트.
 
 ## 6. MCP 도구 표면
@@ -122,11 +122,13 @@ UnityMcpBridge/Tools/Input/
 
 ```jsonc
 {
-  "waitFrames": 0,            // 입력 후 추가 대기 프레임 수 (기본 1 — 입력 처리 보장)
+  "waitFrames": 1,            // 입력 후 추가 대기 프레임 수 (기본 1 — 입력 처리 1프레임 보장)
   "waitFor": null,            // §7.3 WaitCondition (옵션)
   "captureResult": false      // true면 스크린샷 + 콘솔 로그 delta 포함
 }
 ```
+
+`waitFrames`의 기본값을 1로 두는 이유: New Input System의 이벤트는 `InputSystem.Update` 시점에 처리되므로 입력 주입 직후 0프레임 반환 시 콜백이 아직 실행되지 않은 상태가 된다. 핸들러 내부의 down/up 사이 `DelayFrames(1)`과는 별개로, 입력 시퀀스 전체가 끝난 후에도 최소 1프레임을 진행시켜 결과가 반영되도록 한다.
 
 ### 6.2 타겟 명세
 
@@ -143,22 +145,24 @@ UnityMcpBridge/Tools/Input/
 
 ### 6.3 도구별 시그니처
 
+`<Target>`은 §6.2의 타겟 명세 전체를 의미 — `target`/`position`/`worldPoint` 중 하나를 갖는 객체. 모든 좌표 입력 자리(`from`/`to`/`center`/단일 타겟)에 동일하게 적용.
+
 ```jsonc
 unity_input_click {
-  target | position | worldPoint,
+  ...<Target>,                          // target | position | worldPoint
   button: "left" | "right" | "middle" = "left",
-  count: 1            // 2 = 더블클릭
+  count: 1                              // 2 = 더블클릭
 }
 
 unity_input_drag {
   from: <Target>, to: <Target>,
-  points?: [<Target>],   // 경유점
+  points?: [<Target>],                  // 경유점
   durationMs: 200,
   button: "left"
 }
 
 unity_input_hold {
-  target | position,
+  ...<Target>,
   holdMs: 500,
   button: "left"
 }
@@ -166,19 +170,18 @@ unity_input_hold {
 unity_input_swipe {
   from: <Target>,
   direction: "up" | "down" | "left" | "right",
-  distance: 200,
+  distance: 200,                        // 픽셀
   durationMs: 150
 }
 
 unity_input_pinch {
   center: <Target>,
-  startSpread: 100,
-  endSpread: 300,
+  startSpread: 100, endSpread: 300,     // 픽셀 (두 손가락 거리)
   durationMs: 300
 }
 
 unity_input_key {
-  key: "Enter" | "Escape" | ...,   // UnityEngine.InputSystem.Key
+  key: "Enter" | "Escape" | ...,        // UnityEngine.InputSystem.Key 열거자
   modifiers?: ["Ctrl", "Shift", "Alt"],
   action: "press" | "down" | "up" = "press"
 }
@@ -189,8 +192,8 @@ unity_input_type_text {
 }
 
 unity_input_scroll {
-  target | position,
-  dx: 0, dy: 100   // 양수=위/우
+  ...<Target>,
+  dx: 0, dy: 100                        // 양수=위/우
 }
 ```
 
@@ -229,12 +232,15 @@ unity_input_scroll {
 1. `EditorApplication.isPlaying == true` — "Play Mode 진입 필요"
 2. `EditorApplication.isCompiling == false` — "컴파일 완료 대기"
 3. New Input System 패키지 존재 (`versionDefines`로 컴파일 가드 + 런타임 reflection 더블체크) — "com.unity.inputsystem 패키지 필요"
-4. uGUI 타겟에 한해 `EventSystem.current?.currentInputModule is InputSystemUIInputModule` — "InputSystemUIInputModule 사용 필요. EventSystem에 추가하세요."
+4. **타겟 종류별 분기 검증**:
+   - **uGUI 타겟**: `EventSystem.current?.currentInputModule is InputSystemUIInputModule` — 미충족 시 "InputSystemUIInputModule 사용 필요. EventSystem에 추가하세요."
+   - **UI Toolkit 타겟**: `EventSystem.current`에 `UIElementsRuntimePanel` 처리 컴포넌트(`PanelEventHandler`/`PanelRaycaster`) 존재 또는 자동 생성 — Unity가 UIDocument 사용 시 자동 추가하므로 보통 통과.
+   - **3D 월드 타겟 (`worldPoint` / 3D Collider)**: 추가 검증 없음 — `InputInjector`가 가상 마우스로 좌표를 보내고, 게임 코드가 raycast하면 됨.
 
 ### 7.2 TargetResolver 실패 케이스
 
 - **동명 객체 다수**: `index` 미지정 시 후보 목록 포함한 에러 반환 (`{candidates: ["Canvas/A/Button#0", "Canvas/B/Button#1"]}`).
-- **비활성 부모로 인해 렌더되지 않는 타겟**: 거부. 옵션 `force: true` 미지원(MVP) — 실제 사용자가 클릭 불가능한 상태이므로 기본 거부가 안전.
+- **비활성 부모로 인해 렌더되지 않는 타겟**: 거부. `force: true` 옵션은 초기 버전에서 지원하지 않음 — 실제 사용자가 클릭 불가능한 상태이므로 기본 거부가 안전.
 - **카메라 절두체 밖 (3D)**: 거부 + 카메라 위치/타겟 위치 디버그 정보 반환.
 - **WorldSpace Canvas**: `canvas.worldCamera`가 있으면 그 카메라로, 없으면 `Camera.main`으로 변환. 둘 다 없으면 거부.
 - **ScreenSpace-Camera Canvas**: `canvas.worldCamera`로 변환.
@@ -299,8 +305,18 @@ DSL 아닌 enum 기반 — 매 프레임 폴링.
 
 ## 10. 위험 / 미해결 사항
 
-- **TypeText의 IME/한글 입력**: `Keyboard.onTextInput`이 모든 InputField 구현에서 동등하게 동작하는지 검증 필요. MVP는 ASCII 우선, 한글은 후속 이슈.
-- **멀티 디스플레이**: GameView 대상 디스플레이가 다수일 경우의 좌표계는 MVP에서 `Display.main`만 지원.
+- **TypeText의 IME/한글 입력**: `Keyboard.onTextInput`이 모든 InputField 구현에서 동등하게 동작하는지 검증 필요. 초기 버전은 ASCII 우선, 한글은 후속 이슈.
+- **멀티 디스플레이**: GameView 대상 디스플레이가 다수일 경우의 좌표계는 초기 버전에서 `Display.main`만 지원.
 - **High-DPI / Game Resolution**: GameView의 `Render Resolution` vs 화면 해상도 차이로 좌표 변환 어긋남 가능 → `RectTransformUtility`가 사용하는 카메라/캔버스 기준을 명시적으로 따른다.
 - **InputSystemUIInputModule 미사용 프로젝트**: 가드에서 거부 — 폴백을 만들 만큼 흔하지 않다고 판단.
 - **EventSystem 다중 존재**: 첫 번째만 사용. 다중 EventSystem 환경은 비표준이라 가정.
+
+## 11. 구현 단계 권장
+
+스펙 전체가 한 plan으로는 길어질 수 있으므로 다음 phase로 분할 권장:
+
+- **Phase 1 — 기반 + 핵심 동작**: `InputSystemGuard`, `VirtualInputDevices`, `TargetResolver`, `InputInjector`, `ResultSnapshot`, `WaitConditions` + `unity_input_click`, `unity_input_drag`. 이 단계만으로 우선 PR 가능.
+- **Phase 2 — 보조 동작**: `unity_input_hold`, `unity_input_swipe`, `unity_input_scroll`.
+- **Phase 3 — 키보드/멀티터치**: `unity_input_key`, `unity_input_type_text`, `unity_input_pinch`.
+
+각 Phase는 독립적으로 작동·릴리즈 가능. plan 작성 시 이 분할에 맞춰 작업 단위를 잘게 나눈다.
