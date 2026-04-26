@@ -39,5 +39,13 @@ namespace BreadPack.Mcp.Unity.Input
             InputState.Change(ctrl, isPressed ? 1f : 0f);
             InputSystem.Update();
         }
+
+        // 스크롤 휠 입력. dx>0 = 오른쪽, dy>0 = 위로 스크롤.
+        public static void MouseScroll(Vector2 delta)
+        {
+            var mouse = VirtualInputDevices.Mouse;
+            InputState.Change(mouse.scroll, delta);
+            InputSystem.Update();
+        }
     }
 }
