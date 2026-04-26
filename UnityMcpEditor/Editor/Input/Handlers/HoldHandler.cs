@@ -14,6 +14,8 @@ namespace BreadPack.Mcp.Unity.Input
             var opts = CommonOptions.Parse(@params);
 
             var holdMs = @params["holdMs"]?.Value<int?>() ?? 500;
+            if (holdMs <= 0)
+                throw new System.ArgumentException($"holdMs는 1 이상이어야 합니다. (받은 값: {holdMs}). 단순 클릭은 unity_input_click을 사용하세요.");
             var buttonStr = @params["button"]?.Value<string>() ?? "left";
             var button = buttonStr switch
             {

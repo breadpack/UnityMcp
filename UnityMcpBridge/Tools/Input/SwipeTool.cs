@@ -20,9 +20,14 @@ public static class SwipeTool
         [Description("스크린샷+로그 캡처")] bool captureResult = false,
         CancellationToken ct = default)
     {
+        // Phase 1 ClickTool과 일관: 단순 path 문자열도 받아들이도록 fallback 처리
+        object? fromValue = ClickTool.TryParseOrString(from);
+        if (fromValue is string s)
+            fromValue = new Dictionary<string, object?> { ["target"] = s };
+
         var paramsObj = new Dictionary<string, object?>
         {
-            ["from"] = JsonDocument.Parse(from).RootElement,
+            ["from"] = fromValue,
             ["direction"] = direction,
             ["distance"] = distance,
             ["durationMs"] = durationMs,
