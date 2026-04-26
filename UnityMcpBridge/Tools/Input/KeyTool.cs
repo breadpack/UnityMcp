@@ -13,7 +13,7 @@ public static class KeyTool
         UnityConnection connection,
         [Description("키 이름 (UnityEngine.InputSystem.Key 열거자, 예: \"Enter\", \"Escape\", \"A\", \"Digit1\")")] string key,
         [Description("modifier 키 배열 JSON (예: [\"Ctrl\",\"Shift\"]). \"Ctrl\"|\"Shift\"|\"Alt\"|\"Cmd\".")] string? modifiers = null,
-        [Description("\"press\"(누름+뗌) | \"down\"(누름만) | \"up\"(뗌만)")] string action = "press",
+        [Description("\"press\"(누름+뗌, modifier 자동 정리) | \"down\"(누름만, modifier 함께 누름) | \"up\"(키만 떼기 — 누른 modifier는 caller가 별도 unity_input_key {key:\"LeftCtrl\",action:\"up\"}로 떼야 함)")] string action = "press",
         [Description("입력 후 대기 프레임 수")] int waitFrames = 1,
         [Description("대기 조건 JSON")] string? waitFor = null,
         [Description("스크린샷+로그 캡처")] bool captureResult = false,
