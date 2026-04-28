@@ -1,7 +1,7 @@
 {
   "name": "unity-mcp",
   "description": "AI 에이전트가 Unity Editor를 제어하는 MCP 브릿지 — 씬 편집, 에셋 관리, 빌드 자동화",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "author": {
     "name": "breadpack",
     "url": "https://github.com/breadpack"
