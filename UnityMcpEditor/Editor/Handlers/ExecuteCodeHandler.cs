@@ -47,22 +47,35 @@ public static class McpCodeRunner
 
             // Compile
             var provider = new CSharpCodeProvider();
+            // Force a short temp dir so the mono cmdline stays under Windows MAX_PATH (260)
+            // and the 8191-char cmdline limit. Default temp under user profile produced
+            // "파일 이름이나 확장명이 너무 깁니다" with hundreds of /r:full-path refs.
+            var shortTemp = @"C:\Tmp\McpExec";
+            try { System.IO.Directory.CreateDirectory(shortTemp); } catch { }
             var compilerParams = new CompilerParameters
             {
                 GenerateInMemory = true,
                 GenerateExecutable = false,
-                TreatWarningsAsErrors = false
+                TreatWarningsAsErrors = false,
+                TempFiles = new TempFileCollection(shortTemp, keepFiles: false)
             };
 
-            // Add references from loaded assemblies
+            // Add references — dedup by file path and skip dynamic/empty.
+            // Cap total cmdline by skipping refs whose Location is itself >180 chars
+            // (each entry contributes "/r:<path> " plus quoting). Common Unity assemblies
+            // we care about (UnityEngine.*, Assembly-CSharp, BreadPack.Mcp.Unity, user libs)
+            // live under ~120-char paths, so this preserves them while pruning the noise.
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 try
                 {
-                    if (!asm.IsDynamic && !string.IsNullOrEmpty(asm.Location))
-                    {
-                        compilerParams.ReferencedAssemblies.Add(asm.Location);
-                    }
+                    if (asm.IsDynamic) continue;
+                    var loc = asm.Location;
+                    if (string.IsNullOrEmpty(loc)) continue;
+                    if (loc.Length > 180) continue;
+                    if (!seen.Add(loc)) continue;
+                    compilerParams.ReferencedAssemblies.Add(loc);
                 }
                 catch
                 {
