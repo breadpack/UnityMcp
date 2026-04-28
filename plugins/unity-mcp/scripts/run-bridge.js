@@ -62,7 +62,10 @@ async function tryDownloadBinary() {
 
   const version = readPluginVersion();
   const archiveExt = process.platform === 'win32' ? 'zip' : 'tar.gz';
-  const archiveName = `UnityMcpBridge-${rid}.${archiveExt}`;
+  // Asset name must match publish.yml: lowercase-hyphenated `unity-mcp-bridge-${rid}.${ext}`.
+  // Previously read `UnityMcpBridge-${rid}` which 404'd against every release, forcing the
+  // npx fallback. Bug surfaced as "binary not found" / silent stdio MCP server failure.
+  const archiveName = `unity-mcp-bridge-${rid}.${archiveExt}`;
   const url = `https://github.com/breadpack/UnityMcp/releases/download/v${version}/${archiveName}`;
 
   fs.mkdirSync(binDir, { recursive: true });
