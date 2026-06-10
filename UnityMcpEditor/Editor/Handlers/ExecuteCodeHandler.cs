@@ -61,12 +61,13 @@ public static class McpCodeRunner
                 TempFiles = new TempFileCollection(shortTemp, keepFiles: false)
             };
 
-            // Add references — dedup by file path and skip dynamic/empty.
-            // Cap total cmdline by skipping refs whose Location is itself >180 chars
-            // (each entry contributes "/r:<path> " plus quoting). Common Unity assemblies
-            // we care about (UnityEngine.*, Assembly-CSharp, BreadPack.Mcp.Unity, user libs)
-            // live under ~120-char paths, so this preserves them while pruning the noise.
+            // Pass references through a response file (@file) instead of inline /r: arguments.
+            // Capping refs by path length (the previous approach) was not enough on large projects:
+            // hundreds of assemblies still overflow the command line ("The filename or extension is too
+            // long"). A response file keeps the command line tiny and lets us reference *every* loaded
+            // assembly, so user code can use any type available in the editor.
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var rspBuilder = new System.Text.StringBuilder();
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 try
@@ -74,15 +75,19 @@ public static class McpCodeRunner
                     if (asm.IsDynamic) continue;
                     var loc = asm.Location;
                     if (string.IsNullOrEmpty(loc)) continue;
-                    if (loc.Length > 180) continue;
                     if (!seen.Add(loc)) continue;
-                    compilerParams.ReferencedAssemblies.Add(loc);
+                    rspBuilder.Append("-r:\"").Append(loc).Append('"').Append('\n');
                 }
                 catch
                 {
                     // Skip assemblies that can't be referenced
                 }
             }
+
+            // Write the response file inside the short temp dir so its own path stays short too.
+            var referenceFile = System.IO.Path.Combine(shortTemp, $"refs_{Guid.NewGuid():N}.rsp");
+            System.IO.File.WriteAllText(referenceFile, rspBuilder.ToString());
+            compilerParams.CompilerOptions = $"@\"{referenceFile}\"";
 
             CompilerResults results;
             try
@@ -92,6 +97,10 @@ public static class McpCodeRunner
             catch (Exception ex)
             {
                 throw new Exception($"Compilation failed: {ex.Message}");
+            }
+            finally
+            {
+                try { System.IO.File.Delete(referenceFile); } catch { /* best-effort temp cleanup */ }
             }
 
             if (results.Errors.HasErrors)
