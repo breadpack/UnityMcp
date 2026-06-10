@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { tcpPing, getEditorState } = require('./unity-client');
+const { tcpPing, getEditorState, discoverPort } = require('./unity-client');
 
 const args = Object.fromEntries(
   process.argv.slice(2).map(a => {
@@ -11,7 +11,9 @@ const args = Object.fromEntries(
 );
 
 const mode = args.mode || 'session-start';
-const port = parseInt(process.env.UNITY_TCP_PORT || '9876', 10);
+const workspaceDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+// workspace 에 해당하는 Unity 포트 — IIFE 진입 시 디스커버리로 확정
+let port = parseInt(process.env.UNITY_TCP_PORT || '9876', 10);
 const checkCompile = args['check-compile'] === 'true';
 const checkReload = args['check-reload'] === 'true';
 const maxWaitSec = parseInt(process.env.UNITY_MAX_WAIT_SEC || '60', 10);
@@ -40,6 +42,8 @@ async function waitForReady() {
 }
 
 (async () => {
+  port = await discoverPort(workspaceDir);
+
   if (mode === 'session-start') {
     const ok = await tcpPing(port);
     if (!ok) {

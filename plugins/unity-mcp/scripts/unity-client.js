@@ -1,6 +1,7 @@
 'use strict';
 
 const net = require('net');
+const path = require('path');
 
 function tcpPing(port, timeoutMs = 1000) {
   return new Promise(resolve => {
@@ -79,4 +80,58 @@ async function getEditorState(port) {
   return sendRequest(port, 'unity_get_editor_state', {}, 2000);
 }
 
-module.exports = { tcpPing, sendRequest, getEditorState };
+async function getProjectInfo(port) {
+  return sendRequest(port, 'unity_get_project_info', {}, 3000);
+}
+
+// 절대경로화 → 구분자 '/' 통일 → Windows 는 대소문자 무시
+function normalizePath(p) {
+  if (!p) return '';
+  let full;
+  try { full = path.resolve(p); } catch { full = p; }
+  full = full.replace(/\\/g, '/').replace(/\/+$/, '');
+  if (process.platform === 'win32') full = full.toLowerCase();
+  return full;
+}
+
+// Unity projectPath 가 workspace 의 하위/동일 경로인지 판정
+function matchWorkspace(unityProject, workspaceDir) {
+  const u = normalizePath(unityProject);
+  const w = normalizePath(workspaceDir);
+  if (!u || !w) return false;
+  return u === w || u.startsWith(w + '/');
+}
+
+// 9876..9885 를 스캔하여 workspace 에 해당하는 Unity 포트를 찾는다.
+// UNITY_TCP_PORT 가 설정되어 있으면 그대로 사용(오버라이드). 매칭 실패 시 basePort fallback.
+async function discoverPort(workspaceDir, basePort = 9876, range = 10) {
+  const envPort = process.env.UNITY_TCP_PORT;
+  if (envPort) return parseInt(envPort, 10);
+
+  let bestPort = null;
+  let bestLen = -1;
+  for (let i = 0; i < range; i++) {
+    const port = basePort + i;
+    if (!(await tcpPing(port, 300))) continue;
+
+    let projectPath = null;
+    const state = await getEditorState(port).catch(() => null);
+    if (state && state.projectPath) projectPath = state.projectPath;
+    else {
+      const info = await getProjectInfo(port).catch(() => null);
+      if (info && info.projectPath) projectPath = info.projectPath;
+    }
+    if (!projectPath) continue;
+
+    if (matchWorkspace(projectPath, workspaceDir)) {
+      const np = normalizePath(projectPath);
+      if (np.length > bestLen) { bestLen = np.length; bestPort = port; }
+    }
+  }
+  return bestPort != null ? bestPort : basePort;
+}
+
+module.exports = {
+  tcpPing, sendRequest, getEditorState, getProjectInfo,
+  discoverPort, normalizePath, matchWorkspace,
+};

@@ -9,7 +9,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>unity-mcp-bridge</ToolCommandName>
     <PackageId>dev.breadpack.UnityMcpBridge</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.6.8</Version>
     <Authors>breadpack</Authors>
     <Description>MCP (Model Context Protocol) Bridge for Unity Editor — connect AI agents to Unity Editor</Description>
     <PackageProjectUrl>https://github.com/breadpack/UnityMcp</PackageProjectUrl>

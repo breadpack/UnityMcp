@@ -42,9 +42,10 @@ namespace BreadPack.Mcp.Unity
         {
             _cts = new CancellationTokenSource();
             _listener = new TcpListener(IPAddress.Loopback, _port);
-            _listener.Server.SetSocketOption(
-                SocketOptionLevel.Socket,
-                SocketOptionName.ReuseAddress, true);
+            // SO_REUSEADDR 를 켜면 Windows 에서 여러 Unity 인스턴스가 동일 포트(9876)에
+            // 중복 바인딩 "성공" 처리되어 McpServerBootstrap 의 포트 폴백(9877+)이 작동하지 않는다.
+            // 인스턴스별 포트 분리를 위해 배타 점유를 강제한다 — 이미 점유된 포트면 예외 → 다음 포트로 폴백.
+            _listener.Server.ExclusiveAddressUse = true;
             _listener.Start();
             _ = AcceptLoopAsync(_cts.Token).ContinueWith(t =>
             {

@@ -11,7 +11,19 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var port = int.Parse(Environment.GetEnvironmentVariable("UNITY_TCP_PORT") ?? "9876");
+        // UNITY_TCP_PORT 가 명시되면 그대로 사용(수동 오버라이드), 아니면 workspace 기반 자동 디스커버리.
+        int port;
+        var explicitPort = Environment.GetEnvironmentVariable("UNITY_TCP_PORT");
+        if (!string.IsNullOrEmpty(explicitPort) && int.TryParse(explicitPort, out var ep))
+        {
+            port = ep;
+        }
+        else
+        {
+            var workspace = Environment.GetEnvironmentVariable("CLAUDE_PROJECT_DIR")
+                            ?? Directory.GetCurrentDirectory();
+            port = await PortDiscovery.DiscoverAsync(workspace);
+        }
 
         var builder = Host.CreateApplicationBuilder(args);
         builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { tcpPing, sendRequest } = require('./unity-client');
+const { tcpPing, sendRequest, discoverPort } = require('./unity-client');
 
 const args = Object.fromEntries(
   process.argv.slice(2).map(a => {
@@ -11,13 +11,14 @@ const args = Object.fromEntries(
 );
 
 const autoSave = args['auto-save'] === 'true';
-const port = parseInt(process.env.UNITY_TCP_PORT || '9876', 10);
+const workspaceDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
 function log(msg) {
   process.stderr.write(`[Unity MCP] ${msg}\n`);
 }
 
 (async () => {
+  const port = await discoverPort(workspaceDir);
   const connected = await tcpPing(port);
   if (!connected) {
     process.exit(0);
