@@ -118,7 +118,10 @@ public static class McpCodeRunner
                 };
             }
 
-            // Execute with timeout
+            // Execute on the Unity main thread. Most editor APIs (PrefabUtility, AssetDatabase, scene ops)
+            // throw "can only be called from the main thread" if run off-thread. Marshal the user code through
+            // MainThreadDispatcher and block this (background) request thread until it finishes or times out.
+            // The previous approach ran the code on a fresh worker thread, which broke every main-thread API.
             var compiledAssembly = results.CompiledAssembly;
             var runnerType = compiledAssembly.GetType("McpCodeRunner");
             var runMethod = runnerType.GetMethod("Run", BindingFlags.Public | BindingFlags.Static);
@@ -126,26 +129,27 @@ public static class McpCodeRunner
             object returnValue = null;
             Exception executionError = null;
 
-            var thread = new Thread(() =>
-            {
-                try
-                {
-                    returnValue = runMethod.Invoke(null, null);
-                }
-                catch (TargetInvocationException tie)
-                {
-                    executionError = tie.InnerException ?? tie;
-                }
-                catch (Exception ex)
-                {
-                    executionError = ex;
-                }
-            });
+            MainThreadDispatcher.EnsureInitialized();
+            var task = MainThreadDispatcher.RunOnMainThread<object>(() => runMethod.Invoke(null, null));
 
-            thread.Start();
-            if (!thread.Join(TimeoutMs))
+            bool completed;
+            try
             {
-                thread.Abort();
+                completed = task.Wait(TimeoutMs);
+                if (completed)
+                    returnValue = task.Result;
+            }
+            catch (AggregateException ae)
+            {
+                completed = true;
+                var ex = ae.InnerException ?? ae;
+                if (ex is TargetInvocationException tie)
+                    ex = tie.InnerException ?? tie;
+                executionError = ex;
+            }
+
+            if (!completed)
+            {
                 throw new TimeoutException(
                     $"Code execution timed out after {TimeoutMs / 1000} seconds. " +
                     "Possible infinite loop or long-running operation.");
