@@ -61,6 +61,7 @@ namespace BreadPack.Mcp.Unity
                 try
                 {
                     var client = await _listener.AcceptTcpClientAsync();
+                    var remote = client.Client.RemoteEndPoint?.ToString() ?? "unknown";
                     CancellationTokenSource readCts;
                     NetworkStream stream;
                     lock (_clientLock)
@@ -74,14 +75,14 @@ namespace BreadPack.Mcp.Unity
                         readCts = _readCts;
                         stream = _stream;
                     }
-                    _ = ReadLoopAsync(stream, readCts.Token);
+                    _ = ReadLoopAsync(stream, remote, readCts.Token);
                 }
                 catch (ObjectDisposedException) { break; }
                 catch (Exception) { /* 재시도 */ }
             }
         }
 
-        private async Task ReadLoopAsync(NetworkStream stream, CancellationToken ct)
+        private async Task ReadLoopAsync(NetworkStream stream, string remote, CancellationToken ct)
         {
             var lengthBuffer = new byte[4];
             while (!ct.IsCancellationRequested && stream.CanRead)
@@ -94,7 +95,20 @@ namespace BreadPack.Mcp.Unity
 
                     if (length <= 0 || length > MaxPayloadSize)
                     {
-                        UnityEngine.Debug.LogError($"[MCP] Invalid payload size: {length} bytes (max {MaxPayloadSize}). Disconnecting.");
+                        // length prefix 자리에 ASCII HTTP 메서드가 들어오면(예: "GET ") 비정상적으로 큰 값으로
+                        // 해석된다. 브라우저/HTTP 클라이언트/로컬 모니터링이 MCP 포트에 잘못 접속한 경우이므로,
+                        // 프로토콜 위반은 Error 가 아니라 Warning 으로 안내하고 원격 endpoint 를 함께 남긴다.
+                        if (TryGetHttpMethod(lengthBuffer, out var httpMethod))
+                        {
+                            UnityEngine.Debug.LogWarning(
+                                $"[MCP] 비-MCP(HTTP {httpMethod}) 요청이 포트 {_port} 에 접속했습니다 (from {remote}). " +
+                                $"브라우저/HTTP 클라이언트가 잘못 연결한 것으로 MCP 프로토콜이 아닙니다. 연결을 끊습니다.");
+                        }
+                        else
+                        {
+                            UnityEngine.Debug.LogError(
+                                $"[MCP] Invalid payload size: {length} bytes (max {MaxPayloadSize}) from {remote}. Disconnecting.");
+                        }
                         break;
                     }
 
@@ -142,6 +156,26 @@ namespace BreadPack.Mcp.Unity
                 offset += read;
             }
             return true;
+        }
+
+        // length prefix 로 읽은 4바이트가 HTTP 요청 라인의 시작인지 판별한다.
+        // 예: "GET " → 0x47455420(=1195725856) 처럼 MaxPayloadSize 를 넘는 값으로 오독되는 케이스.
+        private static readonly string[] HttpMethodPrefixes =
+            { "GET ", "POST", "PUT ", "HEAD", "DELE", "OPTI", "PATC", "TRAC", "CONN" };
+
+        private static bool TryGetHttpMethod(byte[] first4, out string method)
+        {
+            var s = Encoding.ASCII.GetString(first4, 0, 4);
+            foreach (var prefix in HttpMethodPrefixes)
+            {
+                if (s.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    method = prefix.Trim();
+                    return true;
+                }
+            }
+            method = null;
+            return false;
         }
 
         private async Task SendAsync(string json)
