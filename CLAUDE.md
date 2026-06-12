@@ -46,6 +46,8 @@ AI Agent ←(stdio/MCP JSON-RPC)→ UnityMcpBridge ←(TCP localhost:9876, lengt
 - **Minor**: 외부 통합 방식이 바뀌는 큰 변화 (MCP 프로토콜 시그니처 변경, asmdef 구조 재편 등 사용자 설정·다른 도구가 영향받는 경우)
 - **Major**: 0.x → 1.0 안정화, 호환되지 않는 마이그레이션이 필요한 변경
 
+**중요 — 두 파일을 항상 함께 올린다.** 버전을 올릴 때 `plugin.json`과 루트 `.claude-plugin/marketplace.json`의 `plugins[].version`을 **동일한 값으로 동시에** 수정해야 한다. Claude Code 플러그인 업데이트는 `marketplace.json`의 `version`을 기준으로 갱신을 판단하므로(이 값은 main 브랜치 HEAD에서 읽는다), `plugin.json`만 올리면 사용자에게 업데이트가 노출되지 않는다. 릴리스 태그가 아니라 main 에 버전 커밋이 push 되어야 반영된다.
+
 근거: 8개 입력 도구를 3 phase로 머지하면서 매번 minor를 올린 결과 0.3.1 → 0.6.0이 되어 변화 폭에 비해 버전이 빠르게 소진되었다. 0.x 단계에서는 SemVer 엄격 해석보다 변화 무게에 비례하는 패치 정책이 적합하다.
 
 ## Build & Run
