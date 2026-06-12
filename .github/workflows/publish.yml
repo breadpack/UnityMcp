@@ -12,7 +12,20 @@ env:
   DOTNET_VERSION: '9.0.x'
 
 jobs:
+  # 태그 버전과 plugin.json / marketplace.json 의 version 이 일치하는지 먼저 검증한다.
+  # 어긋나면 배포 전체를 중단해, 갱신 신호가 가지 않는 marketplace.json 누락 배포를 차단한다.
+  verify-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - name: Verify plugin/marketplace version matches tag
+        run: node scripts/bump-version.js --verify "${GITHUB_REF_NAME#v}"
+
   build-binaries:
+    needs: verify-version
     strategy:
       matrix:
         include:
