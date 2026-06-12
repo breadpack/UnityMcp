@@ -1,7 +1,7 @@
 {
   "name": "unity-mcp",
   "description": "AI 에이전트가 Unity Editor를 제어하는 MCP 브릿지 — 씬 편집, 에셋 관리, 빌드 자동화",
-  "version": "0.6.10",
+  "version": "0.6.11",
   "author": {
     "name": "breadpack",
     "url": "https://github.com/breadpack"
@@ -9,11 +9,20 @@
   "homepage": "https://github.com/breadpack/UnityMcp",
   "repository": "https://github.com/breadpack/UnityMcp",
   "license": "MIT",
-  "keywords": ["unity", "mcp", "gamedev", "editor", "scene", "build"],
+  "keywords": [
+    "unity",
+    "mcp",
+    "gamedev",
+    "editor",
+    "scene",
+    "build"
+  ],
   "mcpServers": {
     "unity-bridge": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run-bridge.js"]
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-bridge.js"
+      ]
     }
   },
   "userConfig": {

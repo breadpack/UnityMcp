@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -140,6 +141,16 @@ namespace BreadPack.Mcp.Unity
                 catch (OperationCanceledException) { break; }
                 catch (Exception ex)
                 {
+                    // 새 연결 수락 시 AcceptLoop 가 이전 소켓을 Close()/_readCts.Cancel() 하면,
+                    // 대기 중이던 ReadAsync 가 Mono 에서 OperationCanceledException 이 아니라
+                    // IOException(내부 SocketException: OperationAborted)으로 표면화된다.
+                    // 이는 의도된 연결 정리(hook 핑/Bridge 재연결로 단명 연결이 들어온 경우)이므로
+                    // Error 가 아니라 조용히 종료한다.
+                    if (ct.IsCancellationRequested ||
+                        ex is IOException { InnerException: SocketException { SocketErrorCode: SocketError.OperationAborted } })
+                    {
+                        break;
+                    }
                     UnityEngine.Debug.LogError($"[MCP] ReadLoop error: {ex.Message}");
                     break;
                 }
