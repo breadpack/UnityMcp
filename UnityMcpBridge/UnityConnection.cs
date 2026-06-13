@@ -9,7 +9,11 @@ public class UnityConnection : IDisposable
     private TcpClient? _client;
     private NetworkStream? _stream;
     private readonly string _host;
-    private readonly int _port;
+    // 현재 연결 대상 포트. workspace 모드에서는 재연결 시 디스커버리 결과로 갱신된다(가변).
+    private int _port;
+    // null 이 아니면 workspace 자동 디스커버리 모드. 매 재연결마다 이 workspace 에 해당하는
+    // Unity 포트를 다시 찾는다. null 이면 고정 포트 모드(UNITY_TCP_PORT 수동 오버라이드).
+    private readonly string? _workspace;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     // 요청별 타임아웃 — 무한 대기 방지. 도구 특성에 따라 차등.
@@ -36,6 +40,21 @@ public class UnityConnection : IDisposable
     {
         _host = host;
         _port = port;
+        _workspace = null;
+    }
+
+    /// <summary>
+    /// workspace 자동 디스커버리 모드 연결을 생성한다. 컴파일/도메인 리로드나 다중 인스턴스 경합으로
+    /// Unity 의 포트가 바뀌어도, 재연결 시점에 workspace 에 맞는 포트를 다시 찾아 따라간다.
+    /// </summary>
+    public static UnityConnection ForWorkspace(string workspace, string host = "127.0.0.1")
+        => new(host, workspace);
+
+    private UnityConnection(string host, string workspace)
+    {
+        _host = host;
+        _port = 0; // 미정 — 첫 EnsureConnectedAsync 의 디스커버리가 실제 포트로 갱신한다.
+        _workspace = workspace;
     }
 
     private static TimeSpan ReadTimeoutFromEnv(string name, int defaultSeconds)
@@ -54,12 +73,26 @@ public class UnityConnection : IDisposable
         if (_client?.Connected == true && _stream != null) return;
 
         DisposeConnection();
+
+        // workspace 모드: 매 재연결마다 현재 살아있는 올바른 포트를 다시 찾는다.
+        // 컴파일/리로드로 Editor 가 다른 포트로 올라오거나, 다중 인스턴스 경합으로 포트가
+        // 재배치되어도 따라갈 수 있다. 매칭되는 인스턴스가 아직 없으면(컴파일 중 등)
+        // SocketException 으로 던져 호출부의 backoff 재시도에 맡긴다.
+        int port = _port;
+        if (_workspace != null)
+        {
+            var matched = await PortDiscovery.TryDiscoverAsync(_workspace, ct: ct);
+            if (matched is null)
+                throw new SocketException((int)SocketError.ConnectionRefused);
+            port = matched.Value;
+        }
+
         var client = new TcpClient();
         using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         connectCts.CancelAfter(ConnectTimeout);
         try
         {
-            await client.ConnectAsync(_host, _port, connectCts.Token);
+            await client.ConnectAsync(_host, port, connectCts.Token);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -73,6 +106,10 @@ public class UnityConnection : IDisposable
         }
         _client = client;
         _stream = client.GetStream();
+        if (_workspace != null && port != _port)
+            Console.Error.WriteLine(
+                $"[Unity MCP] Connected to Unity on port {port} for workspace '{_workspace}'");
+        _port = port;
     }
 
     public async Task<JsonDocument> SendRequestAsync(string tool, JsonElement? @params = null, CancellationToken ct = default)

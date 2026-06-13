@@ -15,15 +15,16 @@ public static class PortDiscovery
     private const int ConnectTimeoutMs = 500;
 
     /// <summary>
-    /// workspaceDir 에 해당하는 Unity 포트를 반환. 매칭 실패 시 basePort 로 fallback.
+    /// workspaceDir 에 해당하는 Unity 포트를 탐색한다. 매칭되는 인스턴스가 없으면 null.
+    /// (fallback 하지 않으므로, 재연결 루프가 "아직 내 Unity 없음"을 구분할 수 있다.)
+    /// 반환된 포트는 projectPath 가 workspace 와 일치함이 검증된 포트다.
     /// </summary>
-    public static async Task<int> DiscoverAsync(
+    public static async Task<int?> TryDiscoverAsync(
         string workspaceDir, int basePort = 9876, int range = 10, CancellationToken ct = default)
     {
         var ws = Normalize(workspaceDir);
         int bestPort = -1;
         int bestLen = -1;
-        string? bestProject = null;
 
         for (int i = 0; i < range; i++)
         {
@@ -39,22 +40,11 @@ public static class PortDiscovery
                 {
                     bestLen = p.Length;
                     bestPort = port;
-                    bestProject = projectPath;
                 }
             }
         }
 
-        if (bestPort >= 0)
-        {
-            Console.Error.WriteLine(
-                $"[Unity MCP] Matched Unity on port {bestPort} ({bestProject}) for workspace '{workspaceDir}'");
-            return bestPort;
-        }
-
-        Console.Error.WriteLine(
-            $"[Unity MCP] No Unity matched workspace '{workspaceDir}' in ports {basePort}-{basePort + range - 1}. " +
-            $"Falling back to {basePort}.");
-        return basePort;
+        return bestPort >= 0 ? bestPort : null;
     }
 
     private static async Task<string?> TryGetProjectPathAsync(int port, CancellationToken ct)

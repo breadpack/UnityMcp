@@ -11,23 +11,25 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        // UNITY_TCP_PORT 가 명시되면 그대로 사용(수동 오버라이드), 아니면 workspace 기반 자동 디스커버리.
-        int port;
+        // UNITY_TCP_PORT 가 명시되면 그 포트로 고정(수동 오버라이드).
+        // 아니면 workspace 디스커버리 모드 — 재연결 시점마다 포트를 다시 찾으므로,
+        // 컴파일/리로드·다중 인스턴스 경합으로 포트가 바뀌어도 따라간다.
+        UnityConnection connection;
         var explicitPort = Environment.GetEnvironmentVariable("UNITY_TCP_PORT");
         if (!string.IsNullOrEmpty(explicitPort) && int.TryParse(explicitPort, out var ep))
         {
-            port = ep;
+            connection = new UnityConnection("127.0.0.1", ep);
         }
         else
         {
             var workspace = Environment.GetEnvironmentVariable("CLAUDE_PROJECT_DIR")
                             ?? Directory.GetCurrentDirectory();
-            port = await PortDiscovery.DiscoverAsync(workspace);
+            connection = UnityConnection.ForWorkspace(workspace);
         }
 
         var builder = Host.CreateApplicationBuilder(args);
         builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
-        builder.Services.AddSingleton(new UnityConnection("127.0.0.1", port));
+        builder.Services.AddSingleton(connection);
         builder.Services
             .AddMcpServer()
             .WithStdioServerTransport()
