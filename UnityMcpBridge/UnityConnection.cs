@@ -36,6 +36,11 @@ public class UnityConnection : IDisposable
     // check-unity.js 의 UNITY_MAX_WAIT_SEC 와 동일 환경변수를 공유한다.
     private static readonly TimeSpan ReconnectWindow = ReadTimeoutFromEnv("UNITY_MAX_WAIT_SEC", 60);
 
+    // 살아있는 연결의 신원을 재확인하는 핸드셰이크 주기. 이 간격이 지난 뒤 첫 요청 시
+    // 현재 포트가 여전히 workspace 의 Unity 인지 확인하고, 아니면 재탐색·재연결한다.
+    private static readonly TimeSpan HandshakeInterval = ReadTimeoutFromEnv("UNITY_HANDSHAKE_INTERVAL_SEC", 15);
+    private DateTime _lastHandshakeUtc = DateTime.MinValue;
+
     public UnityConnection(string host = "127.0.0.1", int port = 9876)
     {
         _host = host;
@@ -70,14 +75,46 @@ public class UnityConnection : IDisposable
 
     private async Task EnsureConnectedAsync(CancellationToken ct)
     {
-        if (_client?.Connected == true && _stream != null) return;
+        if (_client?.Connected == true && _stream != null)
+        {
+            // 살아있는 연결 — 주기적으로 신원을 재확인하고, 여전히 내 Unity 면 그대로 재사용.
+            if (await StillValidAsync(ct)) return;
+            DisposeConnection();
+        }
+        else
+        {
+            DisposeConnection();
+        }
 
-        DisposeConnection();
+        await ConnectAsync(ct);
+    }
 
-        // workspace 모드: 매 재연결마다 현재 살아있는 올바른 포트를 다시 찾는다.
-        // 컴파일/리로드로 Editor 가 다른 포트로 올라오거나, 다중 인스턴스 경합으로 포트가
-        // 재배치되어도 따라갈 수 있다. 매칭되는 인스턴스가 아직 없으면(컴파일 중 등)
-        // SocketException 으로 던져 호출부의 backoff 재시도에 맡긴다.
+    /// <summary>
+    /// 살아있는 연결이 여전히 workspace 의 Unity 에 붙어 있는지 핸드셰이크로 확인한다.
+    /// 컴파일로 포트가 바뀌었는데 기존 포트를 다른 인스턴스가 차지한 경우 등을 감지한다.
+    /// HandshakeInterval 이내면 검사를 건너뛴다(요청마다 스캔하지 않도록).
+    /// </summary>
+    private async Task<bool> StillValidAsync(CancellationToken ct)
+    {
+        if (_workspace == null) return true; // 고정 포트(수동 오버라이드)는 재검증 대상 아님
+        if (DateTime.UtcNow - _lastHandshakeUtc < HandshakeInterval) return true;
+
+        if (await PortDiscovery.MatchesWorkspaceAsync(_port, _workspace, ct))
+        {
+            _lastHandshakeUtc = DateTime.UtcNow;
+            return true;
+        }
+
+        Console.Error.WriteLine(
+            $"[Unity MCP] Port {_port} 가 더 이상 workspace '{_workspace}' 와 매칭되지 않습니다 — 재탐색합니다.");
+        return false;
+    }
+
+    private async Task ConnectAsync(CancellationToken ct)
+    {
+        // workspace 모드: 현재 살아있는 올바른 포트를 다시 찾는다. 컴파일/리로드로 Editor 가 다른
+        // 포트로 올라오거나 다중 인스턴스 경합으로 포트가 재배치되어도 따라간다. 매칭되는 인스턴스가
+        // 아직 없으면(컴파일 중 등) SocketException 으로 던져 호출부의 backoff 재시도에 맡긴다.
         int port = _port;
         if (_workspace != null)
         {
@@ -110,6 +147,7 @@ public class UnityConnection : IDisposable
             Console.Error.WriteLine(
                 $"[Unity MCP] Connected to Unity on port {port} for workspace '{_workspace}'");
         _port = port;
+        _lastHandshakeUtc = DateTime.UtcNow;
     }
 
     public async Task<JsonDocument> SendRequestAsync(string tool, JsonElement? @params = null, CancellationToken ct = default)

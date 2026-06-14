@@ -23,6 +23,9 @@ namespace BreadPack.Mcp.Unity
         public static bool IsRunning => _isRunning;
         public static int Port => _actualPort;
 
+        // SessionState 는 프로젝트별 + 도메인 리로드 간 유지(Editor 재시작 시 소멸)라, 다중 Unity 인스턴스가
+        // 포트 힌트를 공유하지 않는다. EditorPrefs(머신/유저 전역)를 쓰면 인스턴스끼리 lastPort 를 서로
+        // 덮어써 포트가 출렁이므로 SessionState 로 격리한다.
         private const string PortPrefsKey = "UnityMcp_LastPort";
 
         static McpServerBootstrap()
@@ -46,11 +49,12 @@ namespace BreadPack.Mcp.Unity
             try
             {
                 MainThreadDispatcher.EnsureInitialized();
+                EditorStateCache.Initialize();
 
                 RegisterHandlers();
 
                 Exception lastEx = null;
-                int lastPort = EditorPrefs.GetInt(PortPrefsKey, -1);
+                int lastPort = SessionState.GetInt(PortPrefsKey, -1);
                 var portsToTry = new List<int>();
                 if (lastPort >= BasePort && lastPort < BasePort + MaxPortRetries) portsToTry.Add(lastPort);
                 for (int i = 0; i < MaxPortRetries; i++)
@@ -67,7 +71,7 @@ namespace BreadPack.Mcp.Unity
                         _server.Start();
                         _actualPort = port;
                         _isRunning = true;
-                        EditorPrefs.SetInt(PortPrefsKey, port);
+                        SessionState.SetInt(PortPrefsKey, port);
                         break;
                     }
                     catch (Exception ex)
@@ -138,6 +142,15 @@ namespace BreadPack.Mcp.Unity
 
         private static async Task<McpResponse> HandleRequestAsync(McpRequest request)
         {
+            // 컴파일/도메인 리로드로 메인 스레드(EditorApplication.update)가 멈춰도 응답해야 하는
+            // 경량 질의(ping/get_editor_state)는 캐시로 TCP 스레드에서 즉답한다. 메인 스레드 큐에
+            // 실으면 컴파일이 끝날 때까지 응답이 막혀, 헬스체크/포트 디스커버리가 무응답이 된다.
+            if (EditorStateCache.IsInitialized &&
+                TryHandleOnBackground(request.Tool, out var cached))
+            {
+                return new McpResponse { Id = request.Id, Success = true, Data = cached };
+            }
+
             try
             {
                 var data = await MainThreadDispatcher.RunOnMainThread(
@@ -157,6 +170,23 @@ namespace BreadPack.Mcp.Unity
                     Success = false,
                     Error = ex.Message
                 };
+            }
+        }
+
+        // 메인 스레드 없이 캐시로 즉답 가능한 경량 도구. 그 외는 false → 기존 메인 스레드 경로로.
+        private static bool TryHandleOnBackground(string tool, out object data)
+        {
+            switch (tool)
+            {
+                case "ping":
+                    data = EditorStateCache.BuildPing();
+                    return true;
+                case "unity_get_editor_state":
+                    data = EditorStateCache.BuildEditorState();
+                    return true;
+                default:
+                    data = null;
+                    return false;
             }
         }
     }

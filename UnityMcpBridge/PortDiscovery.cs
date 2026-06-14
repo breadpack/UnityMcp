@@ -33,7 +33,7 @@ public static class PortDiscovery
             if (projectPath == null) continue;
 
             var p = Normalize(projectPath);
-            if (p == ws || p.StartsWith(ws + "/"))
+            if (IsMatch(p, ws))
             {
                 // 후보 다수 시 가장 깊은(긴) 경로 우선
                 if (p.Length > bestLen)
@@ -46,6 +46,23 @@ public static class PortDiscovery
 
         return bestPort >= 0 ? bestPort : null;
     }
+
+    /// <summary>
+    /// 지정 포트의 Unity 가 여전히 workspace 에 해당하는지 핸드셰이크로 확인한다.
+    /// 살아있는 연결의 신원을 주기적으로 재검증(UnityConnection)하는 용도 — 컴파일로 포트가
+    /// 바뀌었는데 기존 연결이 다른 인스턴스로 유지되는 상황을 감지한다.
+    /// </summary>
+    public static async Task<bool> MatchesWorkspaceAsync(
+        int port, string workspaceDir, CancellationToken ct = default)
+    {
+        var projectPath = await TryGetProjectPathAsync(port, ct);
+        if (projectPath == null) return false;
+        return IsMatch(Normalize(projectPath), Normalize(workspaceDir));
+    }
+
+    private static bool IsMatch(string normalizedProject, string normalizedWorkspace)
+        => normalizedProject == normalizedWorkspace
+        || normalizedProject.StartsWith(normalizedWorkspace + "/");
 
     private static async Task<string?> TryGetProjectPathAsync(int port, CancellationToken ct)
     {
