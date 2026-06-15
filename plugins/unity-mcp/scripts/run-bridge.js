@@ -8,20 +8,28 @@ const https = require('https');
 const os = require('os');
 
 const pluginRoot = path.resolve(__dirname, '..');
-const dataRoot = process.env.CLAUDE_PLUGIN_DATA || path.join(pluginRoot, '.data');
+const dataRoot = process.env.PLUGIN_DATA
+  || process.env.CODEX_PLUGIN_DATA
+  || process.env.CLAUDE_PLUGIN_DATA
+  || path.join(pluginRoot, '.data');
 const binDir = path.join(dataRoot, 'bin');
 const exeName = process.platform === 'win32' ? 'UnityMcpBridge.exe' : 'UnityMcpBridge';
 const binaryPath = path.join(binDir, exeName);
 
 function readPluginVersion() {
-  try {
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8')
-    );
-    return manifest.version || '0.0.0';
-  } catch {
-    return '0.0.0';
+  const manifestPaths = [
+    path.join(pluginRoot, '.codex-plugin', 'plugin.json'),
+    path.join(pluginRoot, '.claude-plugin', 'plugin.json'),
+  ];
+  for (const manifestPath of manifestPaths) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      if (manifest.version) return manifest.version;
+    } catch {
+      // Try the next supported plugin manifest location.
+    }
   }
+  return '0.0.0';
 }
 
 function getRid() {

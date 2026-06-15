@@ -1,0 +1,41 @@
+{
+  "name": "unity-mcp",
+  "description": "AI agents can control the Unity Editor through MCP: scene editing, asset management, UI inspection, input simulation, and build automation.",
+  "version": "0.6.14",
+  "author": {
+    "name": "breadpack",
+    "url": "https://github.com/breadpack"
+  },
+  "homepage": "https://github.com/breadpack/UnityMcp",
+  "repository": "https://github.com/breadpack/UnityMcp",
+  "license": "MIT",
+  "keywords": [
+    "unity",
+    "mcp",
+    "gamedev",
+    "editor",
+    "scene",
+    "build"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Unity MCP",
+    "shortDescription": "Control Unity Editor from Codex",
+    "longDescription": "Unity MCP packages Codex-ready skills, lifecycle hooks, and an MCP bridge for controlling the Unity Editor. Use it to inspect scenes, create and modify GameObjects, manage assets and prefabs, debug compile errors, simulate play mode input, and run builds through Unity.",
+    "developerName": "breadpack",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/breadpack/UnityMcp",
+    "defaultPrompt": [
+      "Inspect this Unity scene and summarize what is present.",
+      "Create a Unity scene hierarchy for this gameplay idea.",
+      "Debug Unity compile errors and suggest fixes."
+    ],
+    "brandColor": "#111827"
+  }
+}

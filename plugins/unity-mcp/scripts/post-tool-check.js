@@ -11,7 +11,11 @@ const args = Object.fromEntries(
 );
 
 const autoSave = args['auto-save'] === 'true';
-const workspaceDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const workspaceDir = process.env.UNITY_WORKSPACE_DIR
+  || process.env.CODEX_PROJECT_DIR
+  || process.env.CODEX_WORKSPACE_ROOT
+  || process.env.CLAUDE_PROJECT_DIR
+  || process.cwd();
 
 function log(msg) {
   process.stderr.write(`[Unity MCP] ${msg}\n`);

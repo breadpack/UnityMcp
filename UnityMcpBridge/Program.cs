@@ -22,7 +22,10 @@ public class Program
         }
         else
         {
-            var workspace = Environment.GetEnvironmentVariable("CLAUDE_PROJECT_DIR")
+            var workspace = Environment.GetEnvironmentVariable("UNITY_WORKSPACE_DIR")
+                            ?? Environment.GetEnvironmentVariable("CODEX_PROJECT_DIR")
+                            ?? Environment.GetEnvironmentVariable("CODEX_WORKSPACE_ROOT")
+                            ?? Environment.GetEnvironmentVariable("CLAUDE_PROJECT_DIR")
                             ?? Directory.GetCurrentDirectory();
             connection = UnityConnection.ForWorkspace(workspace);
         }

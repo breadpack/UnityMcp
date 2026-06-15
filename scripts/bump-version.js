@@ -4,7 +4,7 @@
 /**
  * 플러그인 버전 단일 진입점.
  *
- * plugin.json 과 marketplace.json 의 version 을 항상 같은 값으로 유지한다.
+ * Claude/Codex plugin.json 과 marketplace.json 의 version 을 항상 같은 값으로 유지한다.
  * Claude Code 플러그인 업데이트는 marketplace.json 의 version 으로 갱신을 판단하므로,
  * 두 파일이 어긋나면 배포해도 사용자에게 업데이트가 노출되지 않는다.
  *
@@ -21,7 +21,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const PLUGIN_JSON = path.join(ROOT, 'plugins', 'unity-mcp', '.claude-plugin', 'plugin.json');
+const CLAUDE_PLUGIN_JSON = path.join(ROOT, 'plugins', 'unity-mcp', '.claude-plugin', 'plugin.json');
+const CODEX_PLUGIN_JSON = path.join(ROOT, 'plugins', 'unity-mcp', '.codex-plugin', 'plugin.json');
 const MARKETPLACE_JSON = path.join(ROOT, '.claude-plugin', 'marketplace.json');
 const PLUGIN_NAME = 'unity-mcp';
 
@@ -59,36 +60,45 @@ function bump(current, kind) {
 }
 
 function doSet(version) {
-  const plugin = readJson(PLUGIN_JSON);
+  const claudePlugin = readJson(CLAUDE_PLUGIN_JSON);
+  const codexPlugin = fs.existsSync(CODEX_PLUGIN_JSON) ? readJson(CODEX_PLUGIN_JSON) : null;
   const marketplace = readJson(MARKETPLACE_JSON);
   const entry = getMarketplaceEntry(marketplace);
 
-  plugin.version = version;
+  claudePlugin.version = version;
+  if (codexPlugin) codexPlugin.version = version;
   entry.version = version;
 
-  writeJson(PLUGIN_JSON, plugin);
+  writeJson(CLAUDE_PLUGIN_JSON, claudePlugin);
+  if (codexPlugin) writeJson(CODEX_PLUGIN_JSON, codexPlugin);
   writeJson(MARKETPLACE_JSON, marketplace);
 
   process.stdout.write(
-    `[bump-version] plugin.json + marketplace.json → ${version}\n` +
+    `[bump-version] Claude/Codex plugin.json + marketplace.json → ${version}\n` +
     `  다음 단계: git add -A && git commit && git tag v${version} && push (main + 태그)\n`
   );
 }
 
 function doVerify(expected) {
-  const plugin = readJson(PLUGIN_JSON);
+  const claudePlugin = readJson(CLAUDE_PLUGIN_JSON);
+  const codexPlugin = fs.existsSync(CODEX_PLUGIN_JSON) ? readJson(CODEX_PLUGIN_JSON) : null;
   const marketplace = readJson(MARKETPLACE_JSON);
   const entry = getMarketplaceEntry(marketplace);
 
-  const pv = plugin.version;
+  const pv = claudePlugin.version;
+  const cv = codexPlugin?.version;
   const mv = entry.version;
   const problems = [];
 
   if (pv !== mv) {
-    problems.push(`plugin.json(${pv}) ≠ marketplace.json(${mv})`);
+    problems.push(`.claude-plugin/plugin.json(${pv}) ≠ marketplace.json(${mv})`);
+  }
+  if (cv != null && cv !== pv) {
+    problems.push(`.codex-plugin/plugin.json(${cv}) ≠ .claude-plugin/plugin.json(${pv})`);
   }
   if (expected != null) {
-    if (pv !== expected) problems.push(`plugin.json(${pv}) ≠ 태그/인자(${expected})`);
+    if (pv !== expected) problems.push(`.claude-plugin/plugin.json(${pv}) ≠ 태그/인자(${expected})`);
+    if (cv != null && cv !== expected) problems.push(`.codex-plugin/plugin.json(${cv}) ≠ 태그/인자(${expected})`);
     if (mv !== expected) problems.push(`marketplace.json(${mv}) ≠ 태그/인자(${expected})`);
   }
 
@@ -100,7 +110,7 @@ function doVerify(expected) {
   }
 
   process.stdout.write(
-    `[bump-version] OK — plugin.json = marketplace.json = ${pv}` +
+    `[bump-version] OK — Claude/Codex plugin.json = marketplace.json = ${pv}` +
     (expected != null ? ` (= 태그/인자 ${expected})` : '') + '\n'
   );
 }
@@ -122,7 +132,7 @@ function main() {
 
   const arg = args[0];
   if (['patch', 'minor', 'major'].includes(arg)) {
-    const plugin = readJson(PLUGIN_JSON);
+    const plugin = readJson(CLAUDE_PLUGIN_JSON);
     doSet(bump(plugin.version, arg));
     return;
   }

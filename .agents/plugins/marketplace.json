@@ -1,0 +1,20 @@
+{
+  "name": "breadpack-unitymcp",
+  "interface": {
+    "displayName": "BreadPack Unity MCP"
+  },
+  "plugins": [
+    {
+      "name": "unity-mcp",
+      "source": {
+        "source": "local",
+        "path": "./plugins/unity-mcp"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

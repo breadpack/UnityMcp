@@ -11,7 +11,11 @@ const args = Object.fromEntries(
 );
 
 const mode = args.mode || 'session-start';
-const workspaceDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const workspaceDir = process.env.UNITY_WORKSPACE_DIR
+  || process.env.CODEX_PROJECT_DIR
+  || process.env.CODEX_WORKSPACE_ROOT
+  || process.env.CLAUDE_PROJECT_DIR
+  || process.cwd();
 // workspace 에 해당하는 Unity 포트 — IIFE 진입 시 디스커버리로 확정
 let port = parseInt(process.env.UNITY_TCP_PORT || '9876', 10);
 const checkCompile = args['check-compile'] === 'true';

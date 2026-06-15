@@ -23,9 +23,10 @@ Two components are required:
 | **UnityMcpBridge** | .NET MCP server (stdio ↔ TCP) | `npx` / `dotnet tool` / clone |
 | **UnityMcpEditor** | Unity Editor plugin (TCP server + handlers) | UPM git URL |
 
-## Claude Code Plugin 설치 (권장)
+## Plugin Marketplace 설치 (권장)
 
-Claude Code에서 플러그인으로 설치하면 MCP 서버, Skills, Agents, Hooks가 한 번에 구성됩니다.
+Codex 또는 Claude Code에서 marketplace 방식으로 설치하면 MCP 서버, Skills, Hooks가 한 번에 구성됩니다.
+Claude Code에서는 추가로 Agents 3종도 함께 사용할 수 있습니다.
 
 ### Step 1. Unity Editor 패키지 설치
 
@@ -37,28 +38,54 @@ Unity Editor > Window > Package Manager > **+** > **Add package from git URL**:
 https://github.com/breadpack/UnityMcp.git?path=UnityMcpEditor
 ```
 
-### Step 2. Claude Code에서 플러그인 설치
+### Step 2. Codex에서 설치
+
+이 저장소는 Codex marketplace 파일을 포함합니다:
+
+- Marketplace: `.agents/plugins/marketplace.json`
+- Plugin: `plugins/unity-mcp/.codex-plugin/plugin.json`
+
+Codex CLI에서 marketplace를 추가한 뒤 플러그인을 설치합니다:
+
+```bash
+codex plugin marketplace add breadpack/UnityMcp
+codex plugin add unity-mcp@breadpack-unitymcp
+```
+
+로컬 checkout으로 테스트할 때는 repository root를 marketplace root로 추가합니다:
+
+```bash
+git clone https://github.com/breadpack/UnityMcp.git
+cd UnityMcp
+codex plugin marketplace add .
+codex plugin add unity-mcp@breadpack-unitymcp
+```
+
+설치 후 새 Codex thread를 시작하면 `unity-bridge` MCP 서버와 Unity workflow skills가 로드됩니다.
+
+Codex에서 포트나 대기 시간을 바꾸려면 Codex를 실행하는 셸/환경에 아래 변수를 설정합니다:
+
+| 환경변수 | 설명 | 기본 |
+|----------|------|------|
+| `UNITY_TCP_PORT` | Unity TCP 포트. 설정하지 않으면 workspace 기준으로 9876~9885 자동 탐색 | 자동 탐색 |
+| `UNITY_MAX_WAIT_SEC` | 컴파일/도메인 리로드 대기 최대 시간(초) | `60` |
+| `UNITY_WORKSPACE_DIR` | Unity projectPath 매칭에 사용할 workspace 경로 | 현재 작업 디렉터리 |
+
+### Step 3. Claude Code에서 설치
+
+이 저장소는 Claude Code marketplace 파일도 포함합니다:
+
+- Marketplace: `.claude-plugin/marketplace.json`
+- Plugin: `plugins/unity-mcp/.claude-plugin/plugin.json`
 
 Claude Code 세션 내에서:
 
 ```
-/plugin install --from github:breadpack/UnityMcp
+/plugin marketplace add breadpack/UnityMcp
+/plugin install unity-mcp@breadpack-UnityMcp
 ```
 
-또는 프로젝트 `.claude/settings.json`에 등록:
-
-```json
-{
-  "enabledPlugins": {
-    "unity-mcp": {
-      "source": {
-        "source": "github",
-        "repo": "breadpack/UnityMcp"
-      }
-    }
-  }
-}
-```
+또는 `/plugin` 메뉴에서 `breadpack-UnityMcp` marketplace를 선택한 뒤 `unity-mcp`를 설치합니다.
 
 설치 시 아래 옵션을 프롬프트로 설정할 수 있습니다:
 
@@ -70,9 +97,9 @@ Claude Code 세션 내에서:
 | `check_domain_reload` | 도구 호출 전 도메인 리로드 상태 체크 | `true` |
 | `max_wait_seconds` | 컴파일/리로드 대기 최대 시간(초) | `60` |
 
-### Step 3. 검증
+### Step 4. 검증
 
-Unity Editor를 연 상태에서 Claude Code에 다음과 같이 요청:
+Unity Editor를 연 상태에서 Codex 또는 Claude Code에 다음과 같이 요청:
 
 > "Unity에 ping을 보내줘"
 
@@ -80,22 +107,22 @@ Unity Editor를 연 상태에서 Claude Code에 다음과 같이 요청:
 
 **MCP 서버 (unity-bridge)** — 45+ Unity 도구 (씬, 컴포넌트, 에셋, 빌드 등)
 
-**Agents 3종** — 특정 도메인 전문 에이전트
+**Skills 6종** — Unity workflow 가이드
+| Skill | Claude Code 명령어 / Codex trigger |
+|-------|------------------------------------|
+| Scene Setup | `/unity-mcp:unity-scene-setup` / `unity-scene-setup` |
+| UI Build | `/unity-mcp:unity-ui-build` / `unity-ui-build` |
+| Material Setup | `/unity-mcp:unity-material-setup` / `unity-material-setup` |
+| Prefab Workflow | `/unity-mcp:unity-prefab-workflow` / `unity-prefab-workflow` |
+| Debug | `/unity-mcp:unity-debug` / `unity-debug` |
+| Build & Deploy | `/unity-mcp:unity-build-deploy` / `unity-build-deploy` |
+
+**Agents 3종 (Claude Code)** — 특정 도메인 전문 에이전트
 | Agent | 역할 |
 |-------|------|
 | `unity-scene-architect` | 씬 설계, GameObject/컴포넌트/UI 구성 |
 | `unity-debugger` | 에러 추적, Play Mode 검사, 성능 분석 |
 | `unity-asset-manager` | Material, Prefab, Addressable, 빌드 관리 |
-
-**Skills 6종** — 워크플로우 가이드 (슬래시 커맨드)
-| Skill | 명령어 |
-|-------|--------|
-| Scene Setup | `/unity-mcp:unity-scene-setup` |
-| UI Build | `/unity-mcp:unity-ui-build` |
-| Material Setup | `/unity-mcp:unity-material-setup` |
-| Prefab Workflow | `/unity-mcp:unity-prefab-workflow` |
-| Debug | `/unity-mcp:unity-debug` |
-| Build & Deploy | `/unity-mcp:unity-build-deploy` |
 
 **Hooks** — 자동 상태 관리
 - `SessionStart`: Unity 연결 상태 체크 및 프로젝트 정보 출력
@@ -106,6 +133,8 @@ Unity Editor를 연 상태에서 Claude Code에 다음과 같이 요청:
 ### 사용 예시
 
 ```
+> Unity 씬 계층을 확인하고 현재 상태를 요약해줘.
+
 > @unity-scene-architect 3D 플랫포머 기본 씬을 만들어줘. 바닥, 플레이어, 카메라.
 
 > @unity-debugger 현재 씬의 에러 원인을 찾아줘.
