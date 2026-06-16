@@ -1,10 +1,10 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-UnityMcp는 AI 에이전트(Claude, Cursor, VS Code 등)가 MCP(Model Context Protocol)를 통해 Unity Editor를 제어할 수 있게 하는 브릿지 시스템이다. 두 개의 독립 컴포넌트로 구성된다:
+UnityMcp는 AI 에이전트(Codex, Cursor, VS Code 등)가 MCP(Model Context Protocol)를 통해 Unity Editor를 제어할 수 있게 하는 브릿지 시스템이다. 두 개의 독립 컴포넌트로 구성된다:
 
 - **UnityMcpBridge** (.NET 9 콘솔 앱) — MCP stdio 서버. AI 에이전트와 stdio로 통신하고, Unity Editor와 TCP로 통신한다.
 - **UnityMcpEditor** (Unity Editor 플러그인, UPM 패키지) — Unity Editor 내 TCP 서버. 핸들러를 통해 Unity API를 호출한다.
@@ -24,7 +24,7 @@ AI Agent ←(stdio/MCP JSON-RPC)→ UnityMcpBridge ←(TCP localhost:9876, lengt
 
 ## Plugin Structure
 
-이 저장소는 Claude Code 플러그인으로도 동작한다 (`.claude-plugin/plugin.json` v0.3.0).
+이 저장소는 Codex 플러그인으로도 동작한다 (`.Codex-plugin/plugin.json` v0.3.0).
 
 - **agents/** — 전문 에이전트 3종 (scene-architect, debugger, asset-manager). 각 에이전트는 특정 skills와 `mcp__unity-bridge__*` 도구를 번들한다.
 - **hooks/hooks.json** — SessionStart/PreToolUse/PostToolUse/PostToolUseFailure 훅. `scripts/check-unity.js`를 호출해 Unity 컴파일/도메인 리로드 상태를 감지하고, 진행 중이면 대기 루프로 완료를 기다린다.
@@ -40,13 +40,13 @@ AI Agent ←(stdio/MCP JSON-RPC)→ UnityMcpBridge ←(TCP localhost:9876, lengt
 
 ## Versioning Policy
 
-`plugins/unity-mcp/.claude-plugin/plugin.json`의 `version` 필드는 **patch 단위 증가가 기본**이다 (예: 0.6.0 → 0.6.1 → 0.6.2).
+`plugins/unity-mcp/.Codex-plugin/plugin.json`의 `version` 필드는 **patch 단위 증가가 기본**이다 (예: 0.6.0 → 0.6.1 → 0.6.2).
 
 - **Patch (기본)**: 신규 기능 추가, 핸들러/도구 추가, 버그 수정, 리팩토링 — 대부분의 머지가 여기 해당
 - **Minor**: 외부 통합 방식이 바뀌는 큰 변화 (MCP 프로토콜 시그니처 변경, asmdef 구조 재편 등 사용자 설정·다른 도구가 영향받는 경우)
 - **Major**: 0.x → 1.0 안정화, 호환되지 않는 마이그레이션이 필요한 변경
 
-**중요 — 두 파일을 항상 함께 올린다.** 버전을 올릴 때 `plugin.json`과 루트 `.claude-plugin/marketplace.json`의 `plugins[].version`을 **동일한 값으로 동시에** 수정해야 한다. Claude Code 플러그인 업데이트는 `marketplace.json`의 `version`을 기준으로 갱신을 판단하므로(이 값은 main 브랜치 HEAD에서 읽는다), `plugin.json`만 올리면 사용자에게 업데이트가 노출되지 않는다. 릴리스 태그가 아니라 main 에 버전 커밋이 push 되어야 반영된다.
+**중요 — 두 파일을 항상 함께 올린다.** 버전을 올릴 때 `plugin.json`과 루트 `.Codex-plugin/marketplace.json`의 `plugins[].version`을 **동일한 값으로 동시에** 수정해야 한다. Codex 플러그인 업데이트는 `marketplace.json`의 `version`을 기준으로 갱신을 판단하므로(이 값은 main 브랜치 HEAD에서 읽는다), `plugin.json`만 올리면 사용자에게 업데이트가 노출되지 않는다. 릴리스 태그가 아니라 main 에 버전 커밋이 push 되어야 반영된다.
 
 **버전 변경은 반드시 `scripts/bump-version.js` 로 한다 — 두 파일을 손으로 따로 고치지 않는다.**
 

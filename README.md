@@ -91,11 +91,11 @@ Claude Code 세션 내에서:
 
 | 옵션 | 설명 | 기본 |
 |------|------|------|
-| `unity_tcp_port` | Unity TCP 포트 | `9876` |
 | `auto_save_scene` | 씬 변경 후 자동 저장 | `false` |
 | `check_compile_status` | 도구 호출 전 컴파일 상태 체크 | `true` |
 | `check_domain_reload` | 도구 호출 전 도메인 리로드 상태 체크 | `true` |
-| `max_wait_seconds` | 컴파일/리로드 대기 최대 시간(초) | `60` |
+
+> 포트는 workspace(projectPath) 기준으로 9876~9885를 자동 탐색하므로 별도 설정이 필요 없습니다. 고정 포트를 강제하거나 대기 시간을 바꾸려면 환경변수(`UNITY_TCP_PORT`, `UNITY_MAX_WAIT_SEC`)를 사용하세요.
 
 ### Step 4. 검증
 
@@ -287,9 +287,9 @@ Configure with:
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
-| `UNITY_TCP_PORT` | `9876` | TCP port to connect to Unity Editor |
+| `UNITY_TCP_PORT` | _(auto-discover)_ | Force a fixed TCP port. When unset, the bridge auto-discovers the Unity instance for the current workspace across ports 9876–9885 |
 
-Example with custom port:
+Example with custom port (overrides auto-discovery):
 ```json
 {
   "mcpServers": {

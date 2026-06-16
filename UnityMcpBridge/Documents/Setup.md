@@ -62,14 +62,14 @@ dotnet build
   "mcpServers": {
     "unity": {
       "command": "dotnet",
-      "args": ["run", "--project", "path/to/UnityMcpBridge/UnityMcpBridge.csproj"],
-      "env": { "UNITY_TCP_PORT": "9876" }
+      "args": ["run", "--project", "path/to/UnityMcpBridge/UnityMcpBridge.csproj"]
     }
   }
 }
 ```
 
-> `UNITY_TCP_PORT` 환경변수로 TCP 포트를 변경할 수 있다 (기본값: 9876).
+> 포트는 workspace(projectPath) 기준으로 9876~9885를 자동 탐색하므로 보통 설정이 필요 없다.
+> 특정 포트를 강제하려면 `env` 에 `UNITY_TCP_PORT` 를 지정한다(자동 탐색을 우회한다).
 
 ### 4. Skill 배포 (선택)
 
@@ -91,10 +91,10 @@ unity_ping 도구를 호출하여 연결 확인
 
 ## 포트 설정
 
-- 기본 포트: 9876
-- 포트 충돌 시 자동으로 9876~9885 범위에서 사용 가능한 포트 할당
-- Unity 측과 Bridge 측 포트가 일치해야 함
-- 포트 불일치 시 `UNITY_TCP_PORT` 환경변수를 Unity에서 실제 사용 중인 포트로 변경
+- Unity Editor 측은 9876~9885 범위에서 사용 가능한 포트를 자동 점유한다 (인스턴스별 배타 점유).
+- Bridge 측은 workspace(projectPath)를 기준으로 해당 Unity 인스턴스의 포트를 자동 탐색·매칭하므로, 다중 인스턴스 환경에서도 포트를 수동으로 맞출 필요가 없다.
+- 컴파일/리로드로 포트가 바뀌어도 재연결·주기적 핸드셰이크로 따라간다.
+- 특정 포트를 강제하려면 `UNITY_TCP_PORT` 환경변수를 지정한다(자동 탐색을 우회한다).
 
 ## 트러블슈팅
 
