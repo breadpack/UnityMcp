@@ -88,9 +88,17 @@ namespace BreadPack.Mcp.Unity
             var lengthBuffer = new byte[4];
             while (!ct.IsCancellationRequested && stream.CanRead)
             {
+                // 프레임 경계(idle) 여부 추적: length prefix 첫 바이트를 받기 전에는 true.
+                // idle 상태에서 끊긴 클라이언트 종료(훅 ping 의 sock.destroy 등)만 정상으로 보고,
+                // 프레임 진행 중 끊김(부분 수신·payload 잘림·전송 중 단절)은 실제 에러로 남긴다.
+                bool atFrameBoundary = true;
                 try
                 {
-                    if (!await ReadExactAsync(stream, lengthBuffer, 4, ct)) break;
+                    int prefixRead = await ReadExactAsync(stream, lengthBuffer, 4, ct);
+                    if (prefixRead == 0) break;                 // idle EOF — 정상 종료
+                    if (prefixRead < 4)                         // 부분 수신 — 프레임 중간 단절
+                        throw new IOException($"truncated length prefix ({prefixRead}/4 bytes)");
+                    atFrameBoundary = false;                    // 이제부터 프레임 진행 중
                     int length = (lengthBuffer[0] << 24) | (lengthBuffer[1] << 16)
                                | (lengthBuffer[2] << 8) | lengthBuffer[3];
 
@@ -116,7 +124,10 @@ namespace BreadPack.Mcp.Unity
                     var payload = ArrayPool<byte>.Shared.Rent(length);
                     try
                     {
-                        if (!await ReadExactAsync(stream, payload, length, ct)) break;
+                        int bodyRead = await ReadExactAsync(stream, payload, length, ct);
+                        if (bodyRead == 0) break;               // payload 시작 전 끊김 — 정상 종료로 취급
+                        if (bodyRead < length)                  // payload 잘림 — 프레임 중간 단절
+                            throw new IOException($"truncated payload ({bodyRead}/{length} bytes)");
 
                         var json = Encoding.UTF8.GetString(payload, 0, length);
                         var request = JsonConvert.DeserializeObject<McpRequest>(json);
@@ -132,6 +143,7 @@ namespace BreadPack.Mcp.Unity
                             response = new McpResponse { Id = request?.Id, Success = false, Error = hex.Message };
                         }
                         await SendAsync(JsonConvert.SerializeObject(response, CamelCaseSettings));
+                        atFrameBoundary = true;                 // 요청-응답 완료, 다시 idle
                     }
                     finally
                     {
@@ -141,32 +153,40 @@ namespace BreadPack.Mcp.Unity
                 catch (OperationCanceledException) { break; }
                 catch (Exception ex)
                 {
-                    // 새 연결 수락 시 AcceptLoop 가 이전 소켓을 Close()/_readCts.Cancel() 하면,
-                    // 대기 중이던 ReadAsync 가 Mono 에서 OperationCanceledException 이 아니라
-                    // IOException(내부 SocketException: OperationAborted)으로 표면화된다.
-                    // 이는 의도된 연결 정리(hook 핑/Bridge 재연결로 단명 연결이 들어온 경우)이므로
-                    // Error 가 아니라 조용히 종료한다.
-                    if (ct.IsCancellationRequested ||
-                        ex is IOException { InnerException: SocketException { SocketErrorCode: SocketError.OperationAborted } })
-                    {
-                        break;
-                    }
+                    if (ct.IsCancellationRequested) break;
+
+                    // 클라이언트가 연결을 끊을 때 대기 중이던 ReadAsync 가 표면화하는 소켓 에러들.
+                    //  - OperationAborted: AcceptLoop 가 이전 소켓을 Close()/_readCts.Cancel() 한 로컬 취소
+                    //  - ConnectionAborted/Reset: 원격이 sock.destroy() 등으로 abrupt close
+                    // 단, 에러코드만으로는 정상/비정상을 구분할 수 없다 — "끊긴 시점"으로 판별한다.
+                    // 프레임 경계(idle)에서 끊긴 것만 정상(훅 ping/Bridge 재연결의 단명 연결)으로 보고
+                    // 조용히 종료하고, 프레임 진행 중 단절(부분 수신·payload 잘림·전송 중)은 에러로 남긴다.
+                    bool clientClose = ex is IOException { InnerException: SocketException {
+                        SocketErrorCode: SocketError.OperationAborted
+                                      or SocketError.ConnectionAborted
+                                      or SocketError.ConnectionReset } };
+                    if (clientClose && atFrameBoundary) break;
+
                     UnityEngine.Debug.LogError($"[MCP] ReadLoop error: {ex.Message}");
                     break;
                 }
             }
         }
 
-        private async Task<bool> ReadExactAsync(NetworkStream stream, byte[] buffer, int count, CancellationToken ct)
+        // 실제로 읽은 바이트 수를 반환한다.
+        //  - count: 전부 수신
+        //  - 0: 첫 바이트 받기 전 graceful EOF (프레임 경계 = idle 종료)
+        //  - 0 < n < count: 부분 수신 후 닫힘 (프레임 중간 단절)
+        private async Task<int> ReadExactAsync(NetworkStream stream, byte[] buffer, int count, CancellationToken ct)
         {
             int offset = 0;
             while (offset < count)
             {
                 int read = await stream.ReadAsync(buffer, offset, count - offset, ct);
-                if (read == 0) return false;
+                if (read == 0) break;
                 offset += read;
             }
-            return true;
+            return offset;
         }
 
         // length prefix 로 읽은 4바이트가 HTTP 요청 라인의 시작인지 판별한다.
