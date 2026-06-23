@@ -7,7 +7,8 @@ namespace UnityMcpBridge.Tools;
 [McpServerToolType]
 public static class GetHierarchyTool
 {
-    [McpServerTool(Name = "unity_get_hierarchy"), Description("Scene의 GameObject 계층구조를 조회합니다")]
+    [McpServerTool(Name = "unity_get_hierarchy"),
+     Description("Scene의 GameObject 계층구조를 조회합니다. Prefab 편집 모드면 prefab 내부 구조를 반환하며(isPrefabStage=true), 각 노드에 instanceId와 path가 포함됩니다.")]
     public static async Task<string> Execute(
         UnityConnection connection,
         [Description("최대 탐색 깊이 (1-10)")] int maxDepth = 3,

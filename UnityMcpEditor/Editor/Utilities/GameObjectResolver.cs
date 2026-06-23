@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace BreadPack.Mcp.Unity
 {
@@ -72,7 +71,9 @@ namespace BreadPack.Mcp.Unity
             string rootName = parts[0];
 
             GameObject root = null;
-            var scene = SceneManager.GetActiveScene();
+            // Prefab 편집 모드면 스테이지 preview scene 을, 아니면 활성 씬을 대상으로 한다.
+            // (활성 씬만 보면 prefab 내부를 못 찾거나 메인 씬 동명 오브젝트를 조용히 편집한다)
+            var scene = PrefabStageContext.EditTargetScene;
             foreach (var go in scene.GetRootGameObjects())
             {
                 if (go.name == rootName)

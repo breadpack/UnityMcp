@@ -299,3 +299,28 @@ Addressable 주소/레이블 설정.
 - `instanceId`: Unity InstanceID (정수)
 - **우선순위**: instanceId > path (둘 다 있으면 instanceId 사용)
 - path 또는 instanceId 중 하나는 필수
+
+**Prefab 편집 모드에서의 해석**: `unity_prefab_edit`(enter)로 prefab 편집 스테이지에 진입한 상태에서는 `path`/`instanceId`가 **활성 씬이 아니라 prefab 스테이지(내부 구조) 기준**으로 해석된다. 이때 `unity_get_hierarchy`는 prefab 내부를 반환하며(`isPrefabStage=true`), 각 노드에 `instanceId`/`path`가 실린다 — 그 instanceId를 후속 도구의 안정적 핸들로 사용하라.
+
+---
+
+## unity_prefab_apply (Prefab 원자 편집)
+
+Prefab을 편집 스테이지 없이 단일 호출로 편집·저장한다. instanceId 왕복·중간 리로드·부분 적용/유실이 없다. Prefab 일괄 편집의 권장 경로.
+
+**파라미터**:
+
+| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
+|----------|------|------|--------|------|
+| `assetPath` | string | △ | - | Prefab 경로 (assetGuid와 택1) |
+| `assetGuid` | string | △ | - | Prefab GUID (assetPath와 택1) |
+| `edits` | string(JSON 배열) | O | - | `{op, target, ...}` 배열 |
+
+- `target`: prefab **루트 기준 상대 경로** (`""`/생략 = 루트, `"루트이름/자식"` 또는 `"자식/손자"` 허용)
+- op: `set_property`, `add_component`(properties 인라인 가능), `remove_component`, `set_transform`, `set_active`, `create_child`, `reparent`, `set_asset_reference`, `delete`
+
+**반환**: `{ assetPath, applied, edits: [...], hierarchy: {...} }` (최종 구조 포함)
+
+**주의사항**:
+- **Undo 미지원** (임시 prefab 콘텐츠 편집 API 제약)
+- 같은 prefab이 편집 스테이지로 열려 있으면 충돌로 거부됨 — exit 후 사용

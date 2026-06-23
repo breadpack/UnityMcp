@@ -15,6 +15,10 @@ namespace BreadPack.Mcp.Unity
             var go = new GameObject(name);
             if (parent != null)
                 go.transform.SetParent(parent.transform, false);
+            else if (PrefabStageContext.IsInPrefabMode && PrefabStageContext.PrefabRoot != null)
+                // Prefab 모드에서 부모 미지정 → prefab 의 단일 루트 아래에 둔다.
+                // 스테이지 씬 루트에 형제로 두면 SaveAsPrefabAsset(루트만 직렬화)에서 유실된다.
+                go.transform.SetParent(PrefabStageContext.PrefabRoot.transform, false);
 
             UndoHelper.RegisterCreated(go, $"Create {name}");
             UndoHelper.MarkDirty(go);

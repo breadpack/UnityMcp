@@ -301,7 +301,7 @@ Example with custom port (overrides auto-discovery):
 }
 ```
 
-## Available Tools (37)
+## Available Tools (38)
 
 ### Observation (16)
 
@@ -361,11 +361,12 @@ Example with custom port (overrides auto-discovery):
 |------|-------------|
 | `unity_manage_asset` | Move / copy / delete asset, create folder |
 
-### Prefab (1)
+### Prefab (2)
 
 | Tool | Description |
 |------|-------------|
-| `unity_prefab_edit` | Enter / save / exit Prefab edit mode |
+| `unity_prefab_edit` | Enter / save / exit / status of Prefab edit stage (returns root handle; get_hierarchy reads prefab internals while open) |
+| `unity_prefab_apply` | Atomically edit a prefab in one call (no stage) — apply an `edits[]` batch by root-relative path, then save |
 
 ### Animation (1)
 
