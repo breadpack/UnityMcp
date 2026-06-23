@@ -301,9 +301,9 @@ Example with custom port (overrides auto-discovery):
 }
 ```
 
-## Available Tools (35)
+## Available Tools (37)
 
-### Observation (14)
+### Observation (16)
 
 | Tool | Description |
 |------|-------------|
@@ -317,6 +317,8 @@ Example with custom port (overrides auto-discovery):
 | `unity_get_console_logs` | Get console log entries |
 | `unity_get_available_actions` | List clickable UI actions (Play Mode) |
 | `unity_take_screenshot` | Capture game view screenshot (Play Mode) |
+| `unity_take_scene_view_screenshot` | Capture Scene View screenshot (no Play Mode) |
+| `unity_render_prefab_preview` | Render a prefab to a high-quality preview image in isolation (no Play Mode) |
 | `unity_render_uxml` | Render UXML to image |
 | `unity_refresh_assets` | Refresh AssetDatabase |
 | `unity_addressable_add` | Add asset to Addressable group (requires package) |

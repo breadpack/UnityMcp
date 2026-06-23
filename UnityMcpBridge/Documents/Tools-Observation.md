@@ -1,6 +1,6 @@
 # Observation Tools Reference
 
-Unity Editor의 상태를 조회하는 관찰 도구 10개.
+Unity Editor의 상태를 조회하는 관찰 도구 11개.
 
 ---
 
@@ -84,6 +84,47 @@ UXML 파일을 이미지로 렌더링. Play Mode 불필요.
 - 캡처 전 Game View를 Repaint하므로 최신 프레임 보장
 - 런타임 UI 상태 (바인딩, 애니메이션, Spine) 확인 시 사용
 - render_uxml과 달리 실제 실행 중인 화면 캡처
+
+---
+
+## unity_render_prefab_preview
+
+프리팹을 씬에 배치하지 않고 격리된 프리뷰 씬에서 고품질 이미지로 렌더링. Play Mode 불필요.
+
+**모드**: Edit
+
+**파라미터**:
+
+| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
+|----------|------|------|--------|------|
+| `assetPath` | string | △ | - | 프리팹 에셋 경로 (assetGuid와 택1) |
+| `assetGuid` | string | △ | - | 프리팹 에셋 GUID (assetPath와 택1) |
+| `width` | int | X | 512 | 렌더 너비 (32~4096) |
+| `height` | int | X | 512 | 렌더 높이 (32~4096) |
+| `quality` | int | X | 75 | JPEG 품질 (0=PNG) |
+| `maxWidth` | int | X | 0 | 0보다 크면 비율 유지 축소 |
+| `yaw` | float | X | 30 | 카메라 Y축 회전 (3/4 시점) |
+| `pitch` | float | X | 20 | 카메라 상하 각도 |
+| `fov` | float | X | 30 | 카메라 시야각 |
+
+**반환**:
+```json
+{
+  "imageBase64": "...",
+  "mimeType": "image/jpeg",
+  "width": 512,
+  "height": 512
+}
+```
+
+**모범 사례**:
+- Renderer 바운딩박스 기준 자동 프레이밍 — 거리는 자동 계산되므로 yaw/pitch만 조정하면 된다
+- 투명 배경이 필요하면 quality=0 (PNG)으로 캡처
+
+**주의사항**:
+- MeshRenderer/SkinnedMeshRenderer가 없는 프리팹(UI/빈 GameObject)은 예외 발생
+- SkinnedMeshRenderer는 T-포즈로 렌더, ParticleSystem은 시뮬레이션되지 않아 보이지 않음
+- 격리된 프리뷰 씬이라 프로젝트의 포스트프로세싱/볼륨 룩은 적용되지 않음
 
 ---
 

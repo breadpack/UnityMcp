@@ -49,31 +49,7 @@ namespace BreadPack.Mcp.Unity
 
             try
             {
-                if (maxWidth > 0 && tex.width > maxWidth)
-                {
-                    float ratio = (float)maxWidth / tex.width;
-                    int newHeight = Mathf.RoundToInt(tex.height * ratio);
-                    var resized = new Texture2D(maxWidth, newHeight);
-                    var rt = RenderTexture.GetTemporary(maxWidth, newHeight);
-                    Graphics.Blit(tex, rt);
-                    RenderTexture.active = rt;
-                    resized.ReadPixels(new Rect(0, 0, maxWidth, newHeight), 0, 0);
-                    resized.Apply();
-                    RenderTexture.active = null;
-                    RenderTexture.ReleaseTemporary(rt);
-                    UnityEngine.Object.DestroyImmediate(tex);
-                    tex = resized;
-                }
-
-                byte[] bytes = quality > 0 ? tex.EncodeToJPG(quality) : tex.EncodeToPNG();
-                string mimeType = quality > 0 ? "image/jpeg" : "image/png";
-                return new
-                {
-                    imageBase64 = Convert.ToBase64String(bytes),
-                    mimeType,
-                    width = tex.width,
-                    height = tex.height
-                };
+                return ImageEncoder.Encode(tex, quality, maxWidth);
             }
             finally
             {
