@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using UnityEngine.InputSystem;
 
 namespace BreadPack.Mcp.Unity.Input
 {
@@ -15,18 +14,17 @@ namespace BreadPack.Mcp.Unity.Input
             var action = @params["action"]?.Value<string>() ?? "press";
             var opts = CommonOptions.Parse(@params);
 
-            if (!System.Enum.TryParse<Key>(keyStr, ignoreCase: true, out var key))
-                throw new System.ArgumentException($"알 수 없는 key: {keyStr}. UnityEngine.InputSystem.Key 열거자 이름을 사용하세요 (예: Enter, Escape, A, Digit1).");
+            if (action != "press" && action != "down" && action != "up")
+                throw new System.ArgumentException($"알 수 없는 action: {action}. press/down/up 중 하나여야 합니다.");
 
             var modifiers = ParseModifiers(@params["modifiers"] as JArray);
 
-            InputSystemGuard.EnsurePlayMode();
-            VirtualInputDevices.EnsureRegistered();
+            var input = InputBackendRouter.Resolve(InputCapabilities.Keyboard);
 
             if (action == "press" || action == "down")
             {
-                foreach (var m in modifiers) InputInjector.KeyDown(m);
-                InputInjector.KeyDown(key);
+                foreach (var modifier in modifiers) input.KeyDown(modifier);
+                input.KeyDown(keyStr);
             }
             if (action == "press")
             {
@@ -34,42 +32,42 @@ namespace BreadPack.Mcp.Unity.Input
             }
             if (action == "press" || action == "up")
             {
-                InputInjector.KeyUp(key);
+                input.KeyUp(keyStr);
                 if (action == "press")
                 {
-                    foreach (var m in modifiers) InputInjector.KeyUp(m);
+                    foreach (var modifier in modifiers) input.KeyUp(modifier);
                 }
             }
 
             return await ResultSnapshot.CaptureAsync(opts, () =>
             {
-                return new JObject
+                return InputBackendRouter.AddMetadata(new JObject
                 {
                     ["type"] = "key",
-                    ["key"] = key.ToString(),
+                    ["key"] = keyStr,
                     ["action"] = action,
-                    ["modifiers"] = new JArray(System.Linq.Enumerable.Select(modifiers, m => (object)m.ToString()))
-                };
+                    ["modifiers"] = new JArray(modifiers)
+                }, input);
             });
         }
 
-        private static List<Key> ParseModifiers(JArray arr)
+        private static List<string> ParseModifiers(JArray arr)
         {
-            var list = new List<Key>();
+            var list = new List<string>();
             if (arr == null) return list;
             foreach (var item in arr)
             {
                 var s = item.Value<string>();
                 if (string.IsNullOrEmpty(s)) continue;
-                Key m = s.ToLowerInvariant() switch
+                var modifier = s.ToLowerInvariant() switch
                 {
-                    "ctrl" or "control" => Key.LeftCtrl,
-                    "shift" => Key.LeftShift,
-                    "alt" => Key.LeftAlt,
-                    "cmd" or "meta" or "win" => Key.LeftMeta,
+                    "ctrl" or "control" => "LeftCtrl",
+                    "shift" => "LeftShift",
+                    "alt" => "LeftAlt",
+                    "cmd" or "meta" or "win" => "LeftMeta",
                     _ => throw new System.ArgumentException($"알 수 없는 modifier: {s}. Ctrl/Shift/Alt/Cmd 중 하나여야 합니다.")
                 };
-                list.Add(m);
+                list.Add(modifier);
             }
             return list;
         }

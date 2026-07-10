@@ -1,0 +1,23 @@
+{
+    "name": "BreadPack.Mcp.Unity.InputSystem",
+    "rootNamespace": "BreadPack.Mcp.Unity.Input",
+    "references": [
+        "BreadPack.Mcp.Unity.Input",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": ["INPUT_SYSTEM_PRESENT"],
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.0.0",
+            "define": "INPUT_SYSTEM_PRESENT"
+        }
+    ],
+    "noEngineReferences": false
+}

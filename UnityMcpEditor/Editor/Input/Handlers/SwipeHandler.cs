@@ -30,8 +30,7 @@ namespace BreadPack.Mcp.Unity.Input
 
             InputSystemGuard.EnsurePlayMode();
             var fromR = TargetResolver.Resolve(fromSpec);
-            InputSystemGuard.EnsureReady(fromR.Kind);
-            VirtualInputDevices.EnsureRegistered();
+            var input = InputBackendRouter.Resolve(InputCapabilities.Pointer, fromR);
 
             var toPoint = fromR.ScreenPoint + dirVec * distance;
 
@@ -44,22 +43,22 @@ namespace BreadPack.Mcp.Unity.Input
             }
             path.Add(toPoint);
 
-            InputInjector.MouseMove(path[0]);
+            input.PointerMove(path[0]);
             await MainThreadDispatcher.DelayFrames(1);
-            InputInjector.MouseDown(MouseButton.Left);
+            input.PointerDown(McpMouseButton.Left);
             await MainThreadDispatcher.DelayFrames(1);
 
             for (int i = 1; i < path.Count; i++)
             {
-                InputInjector.MouseMove(path[i]);
+                input.PointerMove(path[i]);
                 await MainThreadDispatcher.DelayFrames(1);
             }
 
-            InputInjector.MouseUp(MouseButton.Left);
+            input.PointerUp(McpMouseButton.Left);
 
             return await ResultSnapshot.CaptureAsync(opts, () =>
             {
-                return new JObject
+                return InputBackendRouter.AddMetadata(new JObject
                 {
                     ["type"] = "swipe",
                     ["from"] = ClickHandler.BuildResolvedJson(fromR),
@@ -67,7 +66,7 @@ namespace BreadPack.Mcp.Unity.Input
                     ["distance"] = distance,
                     ["to"] = new JObject { ["x"] = toPoint.x, ["y"] = toPoint.y },
                     ["pathLength"] = path.Count
-                };
+                }, input);
             });
         }
     }

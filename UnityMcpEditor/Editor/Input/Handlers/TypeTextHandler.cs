@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BreadPack.Mcp.Unity.Input
 {
@@ -15,8 +14,7 @@ namespace BreadPack.Mcp.Unity.Input
             var intervalMs = @params["intervalMs"]?.Value<int?>() ?? 20;
             var opts = CommonOptions.Parse(@params);
 
-            InputSystemGuard.EnsurePlayMode();
-            VirtualInputDevices.EnsureRegistered();
+            var input = InputBackendRouter.Resolve(InputCapabilities.Text);
 
             int frameInterval = Mathf.Max(1, intervalMs / 16);
 
@@ -25,22 +23,22 @@ namespace BreadPack.Mcp.Unity.Input
                 // 1. 문자가 letter/digit이면 KeyDown/Up도 함께 송신.
                 //    legacy InputField는 Event.current.character를 IMGUI 이벤트에서 읽으므로
                 //    TextEvent만으로는 입력이 들어가지 않는 경우가 있음.
-                Key? mappedKey = TryMapAsciiToKey(ch);
+                var mappedKey = TryMapAsciiToKey(ch);
                 bool needShift = char.IsUpper(ch);
 
-                if (mappedKey.HasValue)
+                if (input.Delivery == "raw-device" && mappedKey != null)
                 {
-                    if (needShift) InputInjector.KeyDown(Key.LeftShift);
-                    InputInjector.KeyDown(mappedKey.Value);
+                    if (needShift) input.KeyDown("LeftShift");
+                    input.KeyDown(mappedKey);
                 }
 
                 // 2. TextEvent — TMP_InputField 및 InputSystemUIInputModule 경로
-                InputInjector.SendText(ch);
+                input.SendText(ch);
 
-                if (mappedKey.HasValue)
+                if (input.Delivery == "raw-device" && mappedKey != null)
                 {
-                    InputInjector.KeyUp(mappedKey.Value);
-                    if (needShift) InputInjector.KeyUp(Key.LeftShift);
+                    input.KeyUp(mappedKey);
+                    if (needShift) input.KeyUp("LeftShift");
                 }
 
                 await MainThreadDispatcher.DelayFrames(frameInterval);
@@ -48,26 +46,26 @@ namespace BreadPack.Mcp.Unity.Input
 
             return await ResultSnapshot.CaptureAsync(opts, () =>
             {
-                return new JObject
+                return InputBackendRouter.AddMetadata(new JObject
                 {
                     ["type"] = "type_text",
                     ["length"] = text.Length,
                     ["intervalMs"] = intervalMs
-                };
+                }, input);
             });
         }
 
         // ASCII letter/digit만 매핑. 기호 등은 TextEvent로만 처리.
-        private static Key? TryMapAsciiToKey(char ch)
+        private static string TryMapAsciiToKey(char ch)
         {
             char lower = char.ToLowerInvariant(ch);
             if (lower >= 'a' && lower <= 'z')
-                return (Key)((int)Key.A + (lower - 'a'));
+                return char.ToUpperInvariant(lower).ToString();
             if (ch >= '0' && ch <= '9')
-                return (Key)((int)Key.Digit0 + (ch - '0'));
-            if (ch == ' ') return Key.Space;
-            if (ch == '\n') return Key.Enter;
-            if (ch == '\t') return Key.Tab;
+                return "Digit" + ch;
+            if (ch == ' ') return "Space";
+            if (ch == '\n') return "Enter";
+            if (ch == '\t') return "Tab";
             return null;
         }
     }

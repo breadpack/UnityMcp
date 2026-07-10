@@ -2,8 +2,7 @@
     "name": "BreadPack.Mcp.Unity.Input",
     "rootNamespace": "BreadPack.Mcp.Unity.Input",
     "references": [
-        "BreadPack.Mcp.Unity",
-        "Unity.InputSystem"
+        "BreadPack.Mcp.Unity"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
@@ -11,13 +10,7 @@
     "overrideReferences": true,
     "precompiledReferences": ["Newtonsoft.Json.dll"],
     "autoReferenced": false,
-    "defineConstraints": ["INPUT_SYSTEM_PRESENT"],
-    "versionDefines": [
-        {
-            "name": "com.unity.inputsystem",
-            "expression": "1.0.0",
-            "define": "INPUT_SYSTEM_PRESENT"
-        }
-    ],
+    "defineConstraints": [],
+    "versionDefines": [],
     "noEngineReferences": false
 }

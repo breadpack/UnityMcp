@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine.InputSystem;
 
@@ -22,47 +23,35 @@ namespace BreadPack.Mcp.Unity.Input
 
         public static Mouse Mouse
         {
-            get
-            {
-                EnsureRegistered();
-                return _mouse;
-            }
+            get { EnsureRegistered(); return _mouse; }
         }
 
         public static Keyboard Keyboard
         {
-            get
-            {
-                EnsureRegistered();
-                return _keyboard;
-            }
+            get { EnsureRegistered(); return _keyboard; }
         }
 
         public static Touchscreen Touchscreen
         {
-            get
-            {
-                EnsureRegistered();
-                return _touchscreen;
-            }
+            get { EnsureRegistered(); return _touchscreen; }
         }
 
         public static void EnsureRegistered()
         {
-            _mouse = EnsureDevice(_mouse, "Mouse", McpMouseName, d => (Mouse)d);
-            _keyboard = EnsureDevice(_keyboard, "Keyboard", McpKeyboardName, d => (Keyboard)d);
-            _touchscreen = EnsureDevice(_touchscreen, "Touchscreen", McpTouchscreenName, d => (Touchscreen)d);
+            _mouse = EnsureDevice(_mouse, "Mouse", McpMouseName, device => (Mouse)device);
+            _keyboard = EnsureDevice(_keyboard, "Keyboard", McpKeyboardName, device => (Keyboard)device);
+            _touchscreen = EnsureDevice(_touchscreen, "Touchscreen", McpTouchscreenName, device => (Touchscreen)device);
         }
 
-        private static T EnsureDevice<T>(T cached, string layoutName, string deviceName, System.Func<InputDevice, T> cast)
+        private static T EnsureDevice<T>(T cached, string layoutName, string deviceName, Func<InputDevice, T> cast)
             where T : InputDevice
         {
             if (cached != null && cached.added) return cached;
 
             foreach (var device in InputSystem.devices)
             {
-                if (device is T t && device.name == deviceName)
-                    return t;
+                if (device is T typed && device.name == deviceName)
+                    return typed;
             }
 
             return cast(InputSystem.AddDevice(layoutName, deviceName));

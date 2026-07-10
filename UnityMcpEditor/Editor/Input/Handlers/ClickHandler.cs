@@ -17,28 +17,28 @@ namespace BreadPack.Mcp.Unity.Input
 
             var button = buttonStr switch
             {
-                "right" => MouseButton.Right,
-                "middle" => MouseButton.Middle,
-                _ => MouseButton.Left
+                "right" => McpMouseButton.Right,
+                "middle" => McpMouseButton.Middle,
+                _ => McpMouseButton.Left
             };
 
             InputSystemGuard.EnsurePlayMode();
             var resolved = TargetResolver.Resolve(ts);
-            InputSystemGuard.EnsureReady(resolved.Kind);
-            VirtualInputDevices.EnsureRegistered();
+            var input = InputBackendRouter.Resolve(InputCapabilities.Pointer, resolved);
 
             // 시퀀스: Move → (Down → Up) × count
-            InputInjector.MouseMove(resolved.ScreenPoint);
+            input.PointerMove(resolved.ScreenPoint);
             await MainThreadDispatcher.DelayFrames(1);
             for (int i = 0; i < count; i++)
             {
-                InputInjector.MouseDown(button);
+                input.PointerDown(button);
                 await MainThreadDispatcher.DelayFrames(1);
-                InputInjector.MouseUp(button);
+                input.PointerUp(button);
                 if (i < count - 1) await MainThreadDispatcher.DelayFrames(1);
             }
 
-            return await ResultSnapshot.CaptureAsync(opts, () => BuildResolvedJson(resolved));
+            return await ResultSnapshot.CaptureAsync(opts,
+                () => InputBackendRouter.AddMetadata(BuildResolvedJson(resolved), input));
         }
 
         // spec §6.4: ugui | uitk | world | screen

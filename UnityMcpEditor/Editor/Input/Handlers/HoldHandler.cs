@@ -19,30 +19,29 @@ namespace BreadPack.Mcp.Unity.Input
             var buttonStr = @params["button"]?.Value<string>() ?? "left";
             var button = buttonStr switch
             {
-                "right" => MouseButton.Right,
-                "middle" => MouseButton.Middle,
-                _ => MouseButton.Left
+                "right" => McpMouseButton.Right,
+                "middle" => McpMouseButton.Middle,
+                _ => McpMouseButton.Left
             };
 
             InputSystemGuard.EnsurePlayMode();
             var resolved = TargetResolver.Resolve(ts);
-            InputSystemGuard.EnsureReady(resolved.Kind);
-            VirtualInputDevices.EnsureRegistered();
+            var input = InputBackendRouter.Resolve(InputCapabilities.Pointer, resolved);
 
-            InputInjector.MouseMove(resolved.ScreenPoint);
+            input.PointerMove(resolved.ScreenPoint);
             await MainThreadDispatcher.DelayFrames(1);
-            InputInjector.MouseDown(button);
+            input.PointerDown(button);
 
             int frames = Mathf.Max(1, holdMs / 16);
             await MainThreadDispatcher.DelayFrames(frames);
 
-            InputInjector.MouseUp(button);
+            input.PointerUp(button);
 
             return await ResultSnapshot.CaptureAsync(opts, () =>
             {
                 var json = ClickHandler.BuildResolvedJson(resolved);
                 json["holdMs"] = holdMs;
-                return json;
+                return InputBackendRouter.AddMetadata(json, input);
             });
         }
     }

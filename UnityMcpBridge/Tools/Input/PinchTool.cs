@@ -8,7 +8,7 @@ namespace UnityMcpBridge.Tools.Input;
 [McpServerToolType]
 public static class PinchTool
 {
-    [McpServerTool(Name = "unity_input_pinch"), Description("Play Mode에서 두 손가락 핀치 제스처를 시뮬레이션합니다. center를 기준으로 두 손가락이 startSpread → endSpread로 변화. 줌/회전 검증용 (수평 축).")]
+    [McpServerTool(Name = "unity_input_pinch"), Description("Play Mode에서 New Input System 가상 터치스크린으로 두 손가락 핀치 제스처를 시뮬레이션합니다. Legacy Input.touches는 주입을 지원하지 않습니다.")]
     public static async Task<IEnumerable<AIContent>> Execute(
         UnityConnection connection,
         [Description("중심 타겟 JSON (예: {\"target\":\"Canvas/Photo\"} 또는 {\"position\":{\"x\":480,\"y\":320}})")] string center,

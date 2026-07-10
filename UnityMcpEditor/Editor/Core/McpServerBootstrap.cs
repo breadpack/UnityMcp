@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -119,7 +120,7 @@ namespace BreadPack.Mcp.Unity
             _dispatcher.Register(new GetConsoleLogsHandler(_logBuffer));
 
             // 자동 등록: 파라미터 없는 생성자를 가진 IRequestHandler/IAsyncRequestHandler
-            foreach (var type in typeof(McpServerBootstrap).Assembly.GetTypes())
+            foreach (var type in GetUnityMcpHandlerTypes())
             {
                 if (type.IsAbstract || type.IsInterface) continue;
                 if (type == typeof(GetConsoleLogsHandler)) continue; // 이미 등록됨
@@ -138,6 +139,31 @@ namespace BreadPack.Mcp.Unity
 
             // Custom tool registration (user-defined [McpTool] methods)
             CustomToolRegistry.ScanAndRegister(_dispatcher);
+        }
+
+        private static IEnumerable<Type> GetUnityMcpHandlerTypes()
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var assemblyName = assembly.GetName().Name;
+                if (string.IsNullOrEmpty(assemblyName) || !assemblyName.StartsWith("BreadPack.Mcp.Unity", StringComparison.Ordinal))
+                    continue;
+
+                Type[] types;
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    types = ex.Types;
+                }
+
+                foreach (var type in types)
+                {
+                    if (type != null) yield return type;
+                }
+            }
         }
 
         private static async Task<McpResponse> HandleRequestAsync(McpRequest request)

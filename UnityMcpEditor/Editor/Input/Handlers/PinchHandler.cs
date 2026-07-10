@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem.LowLevel;
 
 namespace BreadPack.Mcp.Unity.Input
 {
@@ -21,8 +20,7 @@ namespace BreadPack.Mcp.Unity.Input
 
             InputSystemGuard.EnsurePlayMode();
             var center = TargetResolver.Resolve(centerSpec);
-            InputSystemGuard.EnsureReady(center.Kind);
-            VirtualInputDevices.EnsureRegistered();
+            var input = InputBackendRouter.Resolve(InputCapabilities.Touch, center);
 
             int steps = Mathf.Max(2, durationMs / 16);
             const int touchId0 = 1;
@@ -38,8 +36,8 @@ namespace BreadPack.Mcp.Unity.Input
             bool fingersBegan = false;
             try
             {
-                InputInjector.TouchSet(0, finger0Start, TouchPhase.Began, touchId0);
-                InputInjector.TouchSet(1, finger1Start, TouchPhase.Began, touchId1);
+                input.TouchSet(0, finger0Start, McpTouchPhase.Began, touchId0);
+                input.TouchSet(1, finger1Start, McpTouchPhase.Began, touchId1);
                 fingersBegan = true;
                 await MainThreadDispatcher.DelayFrames(1);
 
@@ -50,13 +48,13 @@ namespace BreadPack.Mcp.Unity.Input
                     Vector2 finger0 = center.ScreenPoint + Vector2.left * (spread / 2f);
                     Vector2 finger1 = center.ScreenPoint + Vector2.right * (spread / 2f);
 
-                    InputInjector.TouchSet(0, finger0, TouchPhase.Moved, touchId0);
-                    InputInjector.TouchSet(1, finger1, TouchPhase.Moved, touchId1);
+                    input.TouchSet(0, finger0, McpTouchPhase.Moved, touchId0);
+                    input.TouchSet(1, finger1, McpTouchPhase.Moved, touchId1);
                     await MainThreadDispatcher.DelayFrames(1);
                 }
 
-                InputInjector.TouchSet(0, finger0End, TouchPhase.Ended, touchId0);
-                InputInjector.TouchSet(1, finger1End, TouchPhase.Ended, touchId1);
+                input.TouchSet(0, finger0End, McpTouchPhase.Ended, touchId0);
+                input.TouchSet(1, finger1End, McpTouchPhase.Ended, touchId1);
                 fingersBegan = false;
             }
             finally
@@ -64,8 +62,8 @@ namespace BreadPack.Mcp.Unity.Input
                 if (fingersBegan)
                 {
                     // 정상 종료 경로(Ended)가 실행되지 않은 경우만 Canceled로 정리
-                    try { InputInjector.TouchSet(0, finger0End, TouchPhase.Canceled, touchId0); } catch { }
-                    try { InputInjector.TouchSet(1, finger1End, TouchPhase.Canceled, touchId1); } catch { }
+                    try { input.TouchSet(0, finger0End, McpTouchPhase.Canceled, touchId0); } catch { }
+                    try { input.TouchSet(1, finger1End, McpTouchPhase.Canceled, touchId1); } catch { }
                 }
             }
 
@@ -76,7 +74,7 @@ namespace BreadPack.Mcp.Unity.Input
                 json["startSpread"] = startSpread;
                 json["endSpread"] = endSpread;
                 json["steps"] = steps;
-                return json;
+                return InputBackendRouter.AddMetadata(json, input);
             });
         }
     }

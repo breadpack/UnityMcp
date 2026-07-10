@@ -23,18 +23,17 @@ namespace BreadPack.Mcp.Unity.Input
 
             var button = buttonStr switch
             {
-                "right" => MouseButton.Right,
-                "middle" => MouseButton.Middle,
-                _ => MouseButton.Left
+                "right" => McpMouseButton.Right,
+                "middle" => McpMouseButton.Middle,
+                _ => McpMouseButton.Left
             };
 
             InputSystemGuard.EnsurePlayMode();
             var fromR = TargetResolver.Resolve(fromSpec);
             var toR = TargetResolver.Resolve(toSpec);
-            InputSystemGuard.EnsureReady(fromR.Kind);
+            var input = InputBackendRouter.Resolve(InputCapabilities.Pointer, fromR);
             // from/to가 다른 Kind면 to에 대해서도 검증 (uGUI ↔ World 혼합 드래그)
             if (toR.Kind != fromR.Kind) InputSystemGuard.EnsureReady(toR.Kind);
-            VirtualInputDevices.EnsureRegistered();
 
             // 경유점 빌드
             var path = new List<Vector2> { fromR.ScreenPoint };
@@ -62,28 +61,28 @@ namespace BreadPack.Mcp.Unity.Input
             path.Add(toR.ScreenPoint);
 
             // 시퀀스
-            InputInjector.MouseMove(path[0]);
+            input.PointerMove(path[0]);
             await MainThreadDispatcher.DelayFrames(1);
-            InputInjector.MouseDown(button);
+            input.PointerDown(button);
             await MainThreadDispatcher.DelayFrames(1);
 
             for (int i = 1; i < path.Count; i++)
             {
-                InputInjector.MouseMove(path[i]);
+                input.PointerMove(path[i]);
                 await MainThreadDispatcher.DelayFrames(1);
             }
 
-            InputInjector.MouseUp(button);
+            input.PointerUp(button);
 
             return await ResultSnapshot.CaptureAsync(opts, () =>
             {
-                return new JObject
+                return InputBackendRouter.AddMetadata(new JObject
                 {
                     ["type"] = "drag",
                     ["from"] = ClickHandler.BuildResolvedJson(fromR),
                     ["to"] = ClickHandler.BuildResolvedJson(toR),
                     ["pathLength"] = path.Count
-                };
+                }, input);
             });
         }
     }

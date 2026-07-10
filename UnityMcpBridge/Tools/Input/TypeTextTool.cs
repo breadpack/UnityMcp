@@ -8,7 +8,7 @@ namespace UnityMcpBridge.Tools.Input;
 [McpServerToolType]
 public static class TypeTextTool
 {
-    [McpServerTool(Name = "unity_input_type_text"), Description("Play Mode에서 가상 키보드로 텍스트를 입력합니다. uGUI InputField/TMP_InputField가 포커스되어 있어야 합니다. ASCII 우선 — 한글/IME 입력은 미지원.")]
+    [McpServerTool(Name = "unity_input_type_text"), Description("Play Mode에서 포커스된 uGUI InputField/TMP_InputField에 텍스트를 입력합니다. New Input System은 가상 키보드 이벤트, Legacy는 UI 의미 변경을 사용합니다. ASCII 우선 — 한글/IME 입력은 미지원.")]
     public static async Task<IEnumerable<AIContent>> Execute(
         UnityConnection connection,
         [Description("입력할 텍스트")] string text,
