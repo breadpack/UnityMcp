@@ -1,9 +1,10 @@
 {
   "mcpServers": {
     "unity-bridge": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "${PLUGIN_ROOT}/scripts/run-bridge.js"
+        "-y",
+        "unity-mcp-bridge"
       ],
       "startup_timeout_sec": 30,
       "tool_timeout_sec": 300
