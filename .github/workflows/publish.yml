@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: '릴리스 태그 또는 커밋'
+        required: true
+        default: 'main'
 
 permissions:
   contents: write
