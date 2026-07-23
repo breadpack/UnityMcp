@@ -1,7 +1,7 @@
 {
     "name": "BreadPack.Mcp.Unity",
     "rootNamespace": "BreadPack.Mcp.Unity",
-    "references": [],
+    "references": ["BreadPack.Mcp.Unity.Runtime"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

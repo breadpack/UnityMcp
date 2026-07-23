@@ -94,6 +94,7 @@ namespace BreadPack.Mcp.Unity
 
         public static void StopServer()
         {
+            GameViewCaptureService.Shutdown();
             if (!_isRunning) return;
 
             _logBuffer?.Stop();

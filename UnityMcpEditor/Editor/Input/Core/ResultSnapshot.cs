@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using BreadPack.Mcp.Unity;
 
 namespace BreadPack.Mcp.Unity.Input
 {
@@ -46,9 +47,9 @@ namespace BreadPack.Mcp.Unity.Input
                 // 3. captureResult: 스크린샷 + 로그
                 if (opts.CaptureResult)
                 {
-                    var screenshot = await TakeScreenshotInline();
-                    response["screenshotBase64"] = screenshot.base64;
-                    response["mimeType"] = screenshot.mime;
+                    var screenshot = await GameViewCaptureService.CaptureEncodedAsync(75, 0);
+                    response["screenshotBase64"] = screenshot.imageBase64;
+                    response["mimeType"] = screenshot.mimeType;
                     response["width"] = screenshot.width;
                     response["height"] = screenshot.height;
                     response["consoleLogsDelta"] = JArray.FromObject(logs);
@@ -62,25 +63,5 @@ namespace BreadPack.Mcp.Unity.Input
             return response;
         }
 
-        private static async Task<(string base64, string mime, int width, int height)> TakeScreenshotInline()
-        {
-            UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
-            UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
-            await MainThreadDispatcher.DelayFrames(1);
-
-            var tex = ScreenCapture.CaptureScreenshotAsTexture();
-            if (tex == null)
-                return ("", "image/jpeg", 0, 0);
-
-            try
-            {
-                var bytes = tex.EncodeToJPG(75);
-                return (Convert.ToBase64String(bytes), "image/jpeg", tex.width, tex.height);
-            }
-            finally
-            {
-                UnityEngine.Object.DestroyImmediate(tex);
-            }
-        }
     }
 }
