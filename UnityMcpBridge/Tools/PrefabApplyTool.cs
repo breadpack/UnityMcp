@@ -9,7 +9,7 @@ public static class PrefabApplyTool
 {
     [McpServerTool(Name = "unity_prefab_apply"),
      Description(
-         "Prefab을 편집 모드(enter/save/exit) 없이 단일 원자 호출로 편집합니다. " +
+         "Prefab을 편집 모드(enter/edit/save_and_exit) 없이 단일 원자 호출로 편집합니다. " +
          "edits 배열의 각 op를 prefab 루트 기준 상대 경로 target에 순차 적용 후 자동 저장합니다. " +
          "스테이지 진입 불필요·instanceId 불필요·부분 적용/유실 없음. " +
          "여러 GameObject를 가리키는 prefab 일괄 편집의 권장 경로입니다. Undo는 미지원입니다. " +

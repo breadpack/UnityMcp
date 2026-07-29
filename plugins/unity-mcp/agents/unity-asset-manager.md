@@ -24,7 +24,7 @@ Unity 에셋 파이프라인을 관리하는 전문 에이전트입니다.
 4. `unity_refresh_assets`로 에셋 DB 갱신
 
 ## 제약
-- Prefab 편집은 `unity_prefab_apply`(스테이지 없는 원자 호출)를 우선 사용. 단계적·탐색적 편집이 필요할 때만 `unity_prefab_edit`(enter→편집 도구→save→exit) 스테이지를 사용한다. `execute_code` 직접 편집은 위 도구로 표현되지 않는 예외에만.
+- Prefab 편집은 `unity_prefab_apply`(스테이지 없는 원자 호출)를 우선 사용. 단계적·탐색적 편집이 필요할 때만 `unity_prefab_edit`(enter→편집 도구→save_and_exit) 스테이지를 사용한다. dirty `exit`는 실패하므로, 폐기하려면 `discard_and_exit`를 명시한다. `execute_code` 직접 편집은 위 도구로 표현되지 않는 예외에만.
 - Addressable·`unity_prefab_apply` 작업은 Undo 미지원이므로 신중히 처리
 - 에셋 삭제 전 `dryRun=true`로 영향 범위 확인
 - 빌드 전 `unity_get_compile_errors`로 컴파일 에러 확인

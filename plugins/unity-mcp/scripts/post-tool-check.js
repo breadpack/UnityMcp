@@ -1,41 +1,65 @@
 #!/usr/bin/env node
-'use strict';
+"use strict";
 
-const { tcpPing, sendRequest, discoverPort } = require('./unity-client');
+const { sendRequest, getEditorState, discoverPort } = require("./unity-client");
 
 const args = Object.fromEntries(
-  process.argv.slice(2).map(a => {
-    const [k, v] = a.replace(/^--/, '').split('=');
-    return [k, v ?? 'true'];
-  })
+  process.argv.slice(2).map((a) => {
+    const [k, v] = a.replace(/^--/, "").split("=");
+    return [k, v ?? "true"];
+  }),
 );
 
-const autoSave = args['auto-save'] === 'true';
-const workspaceDir = process.env.UNITY_WORKSPACE_DIR
-  || process.env.CODEX_PROJECT_DIR
-  || process.env.CODEX_WORKSPACE_ROOT
-  || process.env.CLAUDE_PROJECT_DIR
-  || process.cwd();
+const autoSave = args["auto-save"] === "true";
+const workspaceDir =
+  process.env.UNITY_WORKSPACE_DIR ||
+  process.env.CODEX_PROJECT_DIR ||
+  process.env.CODEX_WORKSPACE_ROOT ||
+  process.env.CLAUDE_PROJECT_DIR ||
+  process.cwd();
 
 function log(msg) {
   process.stderr.write(`[Unity MCP] ${msg}\n`);
 }
 
-(async () => {
-  const port = await discoverPort(workspaceDir);
-  const connected = await tcpPing(port);
-  if (!connected) {
-    process.exit(0);
+async function run({
+  autoSaveEnabled = autoSave,
+  workspace = workspaceDir,
+  discoverPortFn = discoverPort,
+  getEditorStateFn = getEditorState,
+  sendRequestFn = sendRequest,
+  logFn = log,
+} = {}) {
+  // 자동 저장이 꺼져 있으면 연결 확인만을 위한 단명 TCP probe도 만들지 않는다.
+  if (!autoSaveEnabled) return { skipped: "auto_save_disabled" };
+
+  const port = await discoverPortFn(workspace);
+  let state;
+  try {
+    state = await getEditorStateFn(port);
+  } catch {
+    return { skipped: "editor_unavailable" };
   }
 
-  if (autoSave) {
-    try {
-      await sendRequest(port, 'unity_save_scene', {}, 5000);
-      log('씬 자동 저장 완료');
-    } catch (e) {
-      log(`씬 자동 저장 실패: ${e.message}`);
-    }
+  // Prefab Stage에서 unity_save_scene을 호출하면 preview scene을 잘못 저장하거나
+  // Prefab 워크플로우의 명시적 save/discard 결정을 침범할 수 있으므로 건너뛴다.
+  if (state && state.inPrefabStage) {
+    logFn("Prefab 편집 중이므로 씬 자동 저장을 건너뜁니다");
+    return { skipped: "prefab_stage" };
   }
 
-  process.exit(0);
-})();
+  try {
+    await sendRequestFn(port, "unity_save_scene", {}, 5000);
+    logFn("씬 자동 저장 완료");
+    return { saved: true };
+  } catch (e) {
+    logFn(`씬 자동 저장 실패: ${e.message}`);
+    return { saved: false, error: e.message };
+  }
+}
+
+if (require.main === module) {
+  run().catch((e) => log(`씬 자동 저장 확인 실패: ${e.message}`));
+}
+
+module.exports = { run };

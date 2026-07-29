@@ -4,15 +4,15 @@
 /**
  * 플러그인 버전 단일 진입점.
  *
- * Claude/Codex plugin.json 과 marketplace.json 의 version 을 항상 같은 값으로 유지한다.
+ * Unity UPM package.json, Claude/Codex plugin.json, marketplace.json 의 version 을 항상 같은 값으로 유지한다.
  * Claude Code 플러그인 업데이트는 marketplace.json 의 version 으로 갱신을 판단하므로,
- * 두 파일이 어긋나면 배포해도 사용자에게 업데이트가 노출되지 않는다.
+ * 이 파일들이 어긋나면 배포 산출물과 사용자에게 노출되는 업데이트 버전이 달라진다.
  *
  * 사용법:
- *   node scripts/bump-version.js <x.y.z>        # 두 파일을 지정 버전으로 설정
+ *   node scripts/bump-version.js <x.y.z>        # 모든 버전 파일을 지정 버전으로 설정
  *   node scripts/bump-version.js patch|minor|major  # plugin.json 기준 증가 후 설정
- *   node scripts/bump-version.js --verify <x.y.z>    # 세 버전(인자/plugin/marketplace) 일치 검증 (CI 게이트)
- *   node scripts/bump-version.js --verify            # plugin/marketplace 두 파일만 일치 검증
+ *   node scripts/bump-version.js --verify <x.y.z>    # 인자/UPM/plugin/marketplace 일치 검증 (CI 게이트)
+ *   node scripts/bump-version.js --verify            # UPM/plugin/marketplace 일치 검증
  *
  * 종료 코드: 성공 0 / 불일치·오류 1
  */
@@ -21,6 +21,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
+const UNITY_PACKAGE_JSON = path.join(ROOT, 'UnityMcpEditor', 'package.json');
 const CLAUDE_PLUGIN_JSON = path.join(ROOT, 'plugins', 'unity-mcp', '.claude-plugin', 'plugin.json');
 const CODEX_PLUGIN_JSON = path.join(ROOT, 'plugins', 'unity-mcp', '.codex-plugin', 'plugin.json');
 const MARKETPLACE_JSON = path.join(ROOT, '.claude-plugin', 'marketplace.json');
@@ -60,36 +61,44 @@ function bump(current, kind) {
 }
 
 function doSet(version) {
+  const unityPackage = readJson(UNITY_PACKAGE_JSON);
   const claudePlugin = readJson(CLAUDE_PLUGIN_JSON);
   const codexPlugin = fs.existsSync(CODEX_PLUGIN_JSON) ? readJson(CODEX_PLUGIN_JSON) : null;
   const marketplace = readJson(MARKETPLACE_JSON);
   const entry = getMarketplaceEntry(marketplace);
 
+  unityPackage.version = version;
   claudePlugin.version = version;
   if (codexPlugin) codexPlugin.version = version;
   entry.version = version;
 
+  writeJson(UNITY_PACKAGE_JSON, unityPackage);
   writeJson(CLAUDE_PLUGIN_JSON, claudePlugin);
   if (codexPlugin) writeJson(CODEX_PLUGIN_JSON, codexPlugin);
   writeJson(MARKETPLACE_JSON, marketplace);
 
   process.stdout.write(
-    `[bump-version] Claude/Codex plugin.json + marketplace.json → ${version}\n` +
+    `[bump-version] Unity package.json + Claude/Codex plugin.json + marketplace.json → ${version}\n` +
     `  다음 단계: git add -A && git commit && git tag v${version} && push (main + 태그)\n`
   );
 }
 
 function doVerify(expected) {
+  const unityPackage = readJson(UNITY_PACKAGE_JSON);
   const claudePlugin = readJson(CLAUDE_PLUGIN_JSON);
   const codexPlugin = fs.existsSync(CODEX_PLUGIN_JSON) ? readJson(CODEX_PLUGIN_JSON) : null;
   const marketplace = readJson(MARKETPLACE_JSON);
   const entry = getMarketplaceEntry(marketplace);
 
+  const uv = unityPackage.version;
   const pv = claudePlugin.version;
   const cv = codexPlugin?.version;
   const mv = entry.version;
   const problems = [];
 
+  if (uv !== pv) {
+    problems.push(`UnityMcpEditor/package.json(${uv}) ≠ .claude-plugin/plugin.json(${pv})`);
+  }
   if (pv !== mv) {
     problems.push(`.claude-plugin/plugin.json(${pv}) ≠ marketplace.json(${mv})`);
   }
@@ -97,6 +106,7 @@ function doVerify(expected) {
     problems.push(`.codex-plugin/plugin.json(${cv}) ≠ .claude-plugin/plugin.json(${pv})`);
   }
   if (expected != null) {
+    if (uv !== expected) problems.push(`UnityMcpEditor/package.json(${uv}) ≠ 태그/인자(${expected})`);
     if (pv !== expected) problems.push(`.claude-plugin/plugin.json(${pv}) ≠ 태그/인자(${expected})`);
     if (cv != null && cv !== expected) problems.push(`.codex-plugin/plugin.json(${cv}) ≠ 태그/인자(${expected})`);
     if (mv !== expected) problems.push(`marketplace.json(${mv}) ≠ 태그/인자(${expected})`);
@@ -105,12 +115,12 @@ function doVerify(expected) {
   if (problems.length > 0) {
     fail(
       `버전 불일치:\n  - ${problems.join('\n  - ')}\n` +
-      `해결: node scripts/bump-version.js ${expected || '<x.y.z>'} 로 두 파일을 맞추고 다시 커밋/태그하세요.`
+      `해결: node scripts/bump-version.js ${expected || '<x.y.z>'} 로 모든 버전 파일을 맞추고 다시 커밋/태그하세요.`
     );
   }
 
   process.stdout.write(
-    `[bump-version] OK — Claude/Codex plugin.json = marketplace.json = ${pv}` +
+    `[bump-version] OK — Unity package.json = Claude/Codex plugin.json = marketplace.json = ${pv}` +
     (expected != null ? ` (= 태그/인자 ${expected})` : '') + '\n'
   );
 }

@@ -127,7 +127,7 @@ Unity Editor를 연 상태에서 Codex 또는 Claude Code에 다음과 같이 �
 **Hooks** — 자동 상태 관리
 - `SessionStart`: Unity 연결 상태 체크 및 프로젝트 정보 출력
 - `PreToolUse`: 도구 호출 전 컴파일/도메인 리로드 감지. 진행 중이면 대기 후 재시도.
-- `PostToolUse`: 씬 변경 도구 실행 후 `auto_save_scene=true` 시 자동 저장.
+- `PostToolUse`: 씬 변경 도구 실행 후 `auto_save_scene=true` 시 자동 저장. Prefab Stage에서는 명시적 Prefab 저장 결정을 보존하기 위해 건너뜀.
 - `PostToolUseFailure`: 도구 실행 실패 시 연결 복구 진단.
 
 ### 사용 예시
@@ -365,7 +365,7 @@ Example with custom port (overrides auto-discovery):
 
 | Tool | Description |
 |------|-------------|
-| `unity_prefab_edit` | Enter / save / exit / status of Prefab edit stage (returns root handle; get_hierarchy reads prefab internals while open) |
+| `unity_prefab_edit` | Enter / save / explicit save-and-exit or discard-and-exit / status of Prefab edit stage; dirty `exit` fails without opening a modal |
 | `unity_prefab_apply` | Atomically edit a prefab in one call (no stage) — apply an `edits[]` batch by root-relative path, then save |
 
 ### Animation (1)

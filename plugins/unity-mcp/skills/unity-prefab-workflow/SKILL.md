@@ -7,7 +7,7 @@ description: Unity Prefab 워크플로우 - 인스턴스화, 편집, 저장
 
 Prefab 관련 작업을 수행할 때 사용합니다.
 
-Prefab 편집에는 두 가지 경로가 있습니다. **대부분의 경우 `unity_prefab_apply`(원자적 단일 호출)를 우선 사용**하고, 단계적·탐색적 편집이 필요할 때만 편집 스테이지(enter/save/exit)를 사용합니다.
+Prefab 편집에는 두 가지 경로가 있습니다. **대부분의 경우 `unity_prefab_apply`(원자적 단일 호출)를 우선 사용**하고, 단계적·탐색적 편집이 필요할 때만 편집 스테이지(enter/edit/save_and_exit)를 사용합니다.
 
 ## 권장: 원자적 편집 (`unity_prefab_apply`)
 
@@ -42,8 +42,11 @@ Prefab 편집에는 두 가지 경로가 있습니다. **대부분의 경우 `un
 3. **편집**: 일반 씬 편집 도구 사용 (`unity_create_gameobject`, `unity_add_component`, `unity_set_property`, `unity_set_transform` 등)
    - 편집 모드 중에는 path/instanceId가 **prefab 스테이지 기준**으로 해석됩니다
    - 안정성을 위해 2에서 얻은 `instanceId` 사용을 권장
-4. **저장**: `unity_prefab_edit`(action="save")
-5. **종료**: `unity_prefab_edit`(action="exit")
+4. **저장 후 종료**: `unity_prefab_edit`(action="save_and_exit")
+   - 저장에 성공한 경우에만 dirty 상태를 제거하고 Prefab Stage를 종료합니다
+   - 저장한 뒤 계속 편집하려면 `action="save"`를 사용합니다
+   - 변경사항을 버리고 종료하려면 `action="discard_and_exit"`를 명시합니다
+   - `action="exit"`는 clean 상태에서만 종료하며, dirty 상태에서는 저장 확인창을 열지 않고 오류를 반환합니다
 
 상태 확인: 언제든 `unity_prefab_edit`(action="status")로 현재 편집 모드 여부·assetPath·rootInstanceId를 조회할 수 있습니다. `unity_get_editor_state`/`unity_ping`도 `inPrefabStage`/`prefabStagePath`를 보고합니다.
 
@@ -60,7 +63,7 @@ Prefab 편집에는 두 가지 경로가 있습니다. **대부분의 경우 `un
 
 ## 주의사항
 
-- 편집 스테이지 경로에서는 **저장(save)하지 않고 exit하면 변경사항이 사라집니다**
+- dirty 상태의 `exit`는 변경사항을 자동 저장하거나 폐기하지 않고 실패합니다. `save_and_exit` 또는 `discard_and_exit`를 명시하세요
 - 편집 스테이지 중 스크립트 재컴파일/도메인 리로드가 일어나면 스테이지가 닫힐 수 있습니다 — `status`로 모드를 재확인하고 필요 시 다시 enter 하세요
 - 편집 모드에서 부모 없이 `unity_create_gameobject`를 호출하면 새 오브젝트가 **prefab 루트 아래**에 생성됩니다(저장에 포함되도록)
 - 같은 prefab이 편집 스테이지로 열려 있는 동안에는 `unity_prefab_apply`를 사용할 수 없습니다(충돌) — exit 후 사용하거나 스테이지 도구로 편집하세요

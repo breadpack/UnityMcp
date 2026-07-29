@@ -1,10 +1,15 @@
 {
   "name": "com.breadpack.unity-mcp",
-  "version": "0.6.23",
+  "version": "0.6.26",
   "displayName": "Unity MCP",
   "description": "MCP (Model Context Protocol) server for Unity Editor — connect AI agents to Unity Editor",
   "unity": "6000.0",
-  "keywords": ["mcp", "ai", "editor", "tools"],
+  "keywords": [
+    "mcp",
+    "ai",
+    "editor",
+    "tools"
+  ],
   "author": {
     "name": "breadpack",
     "url": "https://github.com/breadpack"
