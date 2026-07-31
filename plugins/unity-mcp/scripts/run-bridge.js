@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const os = require('os');
+const { compareVersions, readPluginVersion } = require('./version-utils');
 
 const pluginRoot = path.resolve(__dirname, '..');
 const dataRoot = process.env.PLUGIN_DATA
@@ -22,22 +23,6 @@ const versionMarkerPath = path.join(binDir, 'installed.version');
 // SelfUpdateTool 과 약속된 "업데이트 후 재시작" 종료 코드. 양쪽을 함께 바꿔야 한다.
 const UPDATE_EXIT_CODE = 42;
 const REPO = 'breadpack/UnityMcp';
-
-function readPluginVersion() {
-  const manifestPaths = [
-    path.join(pluginRoot, '.codex-plugin', 'plugin.json'),
-    path.join(pluginRoot, '.claude-plugin', 'plugin.json'),
-  ];
-  for (const manifestPath of manifestPaths) {
-    try {
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-      if (manifest.version) return manifest.version;
-    } catch {
-      // Try the next supported plugin manifest location.
-    }
-  }
-  return '0.0.0';
-}
 
 function getRid() {
   const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
@@ -79,17 +64,6 @@ function readInstalledVersion() {
 
 function writeInstalledVersion(version) {
   try { fs.writeFileSync(versionMarkerPath, version, 'utf8'); } catch { /* best-effort */ }
-}
-
-// "0.6.15" → [0,6,15]. a<b 면 음수, 같으면 0, a>b 면 양수.
-function compareVersions(a, b) {
-  const pa = String(a).replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
-  const pb = String(b).replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const d = (pa[i] || 0) - (pb[i] || 0);
-    if (d !== 0) return d;
-  }
-  return 0;
 }
 
 // GitHub 최신 릴리스 태그 조회 (vX.Y.Z → X.Y.Z).
@@ -213,7 +187,7 @@ function runOnce() {
 async function main() {
   // (C) 시작 시 정합: plugin 버전보다 캐시 바이너리가 낮으면 갱신한다.
   //     plugin 만 올라가고 바이너리가 따라오지 않아 구버전이 고착되던 문제를 막는다.
-  const pluginVersion = readPluginVersion();
+  const pluginVersion = readPluginVersion() || '0.0.0';
   try {
     await ensureBinary(pluginVersion);
   } catch (e) {

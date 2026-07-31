@@ -24,6 +24,7 @@ namespace BreadPack.Mcp.Unity
         public static string ProjectPath { get; private set; } = "";
         public static string ProjectName { get; private set; } = "";
         public static string UnityVersion { get; private set; } = "";
+        public static string PackageVersion { get; private set; } = "";
 
         // 가변 상태 — 메인 스레드에서만 기록, TCP 스레드에서 읽음
         private static volatile bool _isCompiling;
@@ -42,6 +43,7 @@ namespace BreadPack.Mcp.Unity
             ProjectPath = Path.GetDirectoryName(Application.dataPath) ?? "";
             ProjectName = Application.productName;
             UnityVersion = Application.unityVersion;
+            PackageVersion = GetPackageVersion();
             _autoRefreshMode = RefreshAssetDatabaseHandler.GetAutoRefreshModeName();
             _activeScene = SceneManager.GetActiveScene().name ?? "";
 
@@ -80,6 +82,21 @@ namespace BreadPack.Mcp.Unity
             IsInitialized = true;
         }
 
+        private static string GetPackageVersion()
+        {
+            try
+            {
+                return UnityEditor.PackageManager.PackageInfo
+                    .FindForPackageName("com.breadpack.unity-mcp")?.version ?? "";
+            }
+            catch
+            {
+                // 버전 안내는 best-effort다. Package Manager 메타데이터 조회 실패가
+                // MCP 서버 자체의 시작을 막아서는 안 된다.
+                return "";
+            }
+        }
+
         private static void OnCompilationStarted(object _) => _isCompiling = true;
         private static void OnCompilationFinished(object _) => _isCompiling = false;
         private static void OnBeforeAssemblyReload() => _isUpdating = true;
@@ -114,6 +131,7 @@ namespace BreadPack.Mcp.Unity
             inPrefabStage = _inPrefabStage,
             prefabStagePath = _prefabStagePath,
             unityVersion = UnityVersion,
+            packageVersion = PackageVersion,
             projectName = ProjectName,
             projectPath = ProjectPath,
         };
