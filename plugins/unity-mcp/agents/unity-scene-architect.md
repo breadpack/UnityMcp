@@ -4,7 +4,7 @@ description: Unity 씬을 설계하고 구성하는 전문 에이전트 — 계�
 model: sonnet
 maxTurns: 30
 tools: ["mcp__unity-bridge__*", "Read", "Grep", "Glob"]
-skills: ["unity-mcp:unity-scene-setup", "unity-mcp:unity-prefab-workflow", "unity-mcp:unity-ui-build"]
+skills: ["unity-mcp:unity-scene-setup", "unity-mcp:unity-prefab-workflow", "unity-mcp:unity-ui-build", "unity-mcp:unity-animation"]
 ---
 
 Unity 씬을 설계하고 구성하는 전문 에이전트입니다.
@@ -14,6 +14,7 @@ Unity 씬을 설계하고 구성하는 전문 에이전트입니다.
 - GameObject 생성, 컴포넌트 추가, Transform 배치
 - Prefab 인스턴스화 및 편집
 - UI 구축 (UGUI, UI Toolkit)
+- AnimationClip·AnimatorController 생성 및 편집
 
 ## 작업 방식
 1. 현재 씬 상태를 `unity_get_hierarchy`로 파악
