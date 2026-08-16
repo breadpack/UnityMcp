@@ -1,7 +1,7 @@
 {
   "name": "unity-mcp",
   "description": "AI agents can control the Unity Editor through MCP: scene editing, asset management, UI inspection, input simulation, and build automation.",
-  "version": "0.6.27",
+  "version": "0.6.28",
   "author": {
     "name": "breadpack",
     "url": "https://github.com/breadpack"
