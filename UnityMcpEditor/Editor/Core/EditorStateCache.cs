@@ -54,6 +54,9 @@ namespace BreadPack.Mcp.Unity
             CompilationPipeline.compilationFinished += OnCompilationFinished;
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+            // 리로드 직후 tick 이 없어도(비포커스) isUpdating 이 stale 로 남지 않도록 이벤트에서 한 번 갱신.
+            AssemblyReloadEvents.afterAssemblyReload -= RefreshVolatile;
+            AssemblyReloadEvents.afterAssemblyReload += RefreshVolatile;
 
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
@@ -128,6 +131,7 @@ namespace BreadPack.Mcp.Unity
             isCompiling = _isCompiling,
             isUpdating = _isUpdating,
             isPlaying = _isPlaying,
+            autoTick = EditorAutoTick.IsEnabled,
             inPrefabStage = _inPrefabStage,
             prefabStagePath = _prefabStagePath,
             unityVersion = UnityVersion,

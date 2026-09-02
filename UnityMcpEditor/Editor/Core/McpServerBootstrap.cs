@@ -32,21 +32,22 @@ namespace BreadPack.Mcp.Unity
         static McpServerBootstrap()
         {
             EditorApplication.quitting += StopServer;
-            EditorApplication.delayCall += StartServer;
             AssemblyReloadEvents.beforeAssemblyReload += StopServer;
-            AssemblyReloadEvents.afterAssemblyReload += () => EditorApplication.delayCall += StartServer;
+            // 도메인 리로드 후에는 [InitializeOnLoad] 정적 생성자가 다시 실행되므로 afterAssemblyReload 는
+            // 안전망이다. 두 경로 모두 delayCall 을 거치지 않고 즉시 기동한다 — delayCall 은 다음
+            // EditorApplication.update tick 에서만 실행되는데, 비포커스 Editor 는 리로드 직후 tick 을
+            // 돌리지 않아 창을 클릭할 때까지 TCP 리스너가 바인딩되지 않고 Bridge 재연결이 실패했다.
+            AssemblyReloadEvents.afterAssemblyReload += StartServer;
+            StartServer();
         }
 
         public static void StartServer()
         {
             if (_isRunning) return;
 
-            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
-            {
-                EditorApplication.delayCall += StartServer;
-                return;
-            }
-
+            // 컴파일/임포트 중이어도 리스너는 즉시 바인딩한다. ping/get_editor_state 는 EditorStateCache 로
+            // TCP 스레드에서 즉답하므로 Bridge 포트 디스커버리·훅 대기가 tick 없이도 동작하고, 그 외 요청은
+            // MainThreadDispatcher 큐에 쌓였다가 Editor 가 idle 이 되면 처리된다.
             try
             {
                 MainThreadDispatcher.EnsureInitialized();
@@ -83,6 +84,9 @@ namespace BreadPack.Mcp.Unity
                     }
                 }
                 if (!_isRunning) throw lastEx ?? new Exception("No available port");
+
+                // 세션 중 켜 둔 autotick 은 리로드로 정적 상태가 지워지므로 SessionState 에서 복원한다.
+                EditorAutoTick.RestoreFromSession();
 
                 Debug.Log($"[MCP] Server started on port {_actualPort}");
             }

@@ -71,6 +71,7 @@ async function testSessionStartUsesStatePackageVersion() {
     port: 9876,
     workspaceDir: "D:\\Projects\\Example",
     tcpPingFn: async () => true,
+    sendRequestFn: async () => ({}),
     getEditorStateFn: async () => ({
       projectName: "Example",
       projectPath: "D:\\Projects\\Example",
@@ -97,6 +98,7 @@ async function testSessionStartFallsBackForOlderPackage() {
     port: 9876,
     workspaceDir: "D:\\Projects\\Example",
     tcpPingFn: async () => true,
+    sendRequestFn: async () => ({}),
     getEditorStateFn: async () => ({
       projectName: "Example",
       projectPath: "D:\\Projects\\Example",
@@ -171,12 +173,31 @@ async function testUnifiedStateFallsBackToTcp() {
     findPipelineDescriptorFn: () => ({ port: 7800, projectPath: "D:\\Projects\\Example" }),
     pipelineStatusFn: async () => { throw new Error("ECONNREFUSED"); },
     tcpPingFn: async () => true,
+    sendRequestFn: async () => ({}),
     getEditorStateFn: async () => ({ isCompiling: true, isUpdating: false, projectName: "Example" }),
   });
   assert.strictEqual(state.source, "tcp");
   assert.strictEqual(state.port, 9877);
   assert.strictEqual(state.ready, false);
   assert.strictEqual(state.isCompiling, true);
+}
+
+async function testSessionStartEnablesAutotickOnTcp() {
+  const calls = [];
+  await runSessionStart({
+    port: 9876,
+    workspaceDir: "D:\Projects\Example",
+    getUnifiedEditorStateFn: async () => ({
+      source: "tcp", connected: true, ready: true, port: 9877,
+      projectName: "Example", unityVersion: "6000.3.0f1", packageVersion: "1.0.0",
+    }),
+    pipelineExecFn: async () => { throw new Error("pipeline must not be used on tcp path"); },
+    sendRequestFn: async (port, tool, params) => { calls.push([port, tool, params]); return {}; },
+    readPluginVersionFn: () => "1.0.0",
+    logFn: () => {},
+    contextFn: () => {},
+  });
+  assert.deepStrictEqual(calls, [[9877, "unity_set_autotick", { enable: true }]]);
 }
 
 async function testSessionStartEnablesAutotickOnPipeline() {
@@ -230,6 +251,7 @@ function testCompileErrorsAreReadFromEditorLog() {
   await testUnifiedStateReportsSettlingAsBusy();
   await testUnifiedStateFallsBackToTcp();
   await testSessionStartEnablesAutotickOnPipeline();
+  await testSessionStartEnablesAutotickOnTcp();
   testConnectionContextMentionsPipelineInstallOnTcpOnly();
   testCompileErrorsAreReadFromEditorLog();
   testMatchingVersionsProduceNoContext();

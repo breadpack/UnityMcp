@@ -78,7 +78,7 @@ unity command eval --json -- --code 'return UnityEngine.Application.unityVersion
 ## 편집 → 컴파일 → 테스트 루프
 
 ```bash
-unity command set_autotick --json -- --enable true     # 세션 훅이 자동으로 켜준다. 수동 세션이면 먼저 실행
+unity command set_autotick --json -- --enable true     # 세션 훅이 자동으로 켜준다. 수동 세션이면 먼저 실행 (Pipeline 없으면 MCP `unity_set_autotick`)
 # ... .cs 파일 수정 ...
 unity command recompile --json
 unity command recompile_status --json                  # completed | up_to_date 까지 폴링, failed=true 면 errors[] 확인

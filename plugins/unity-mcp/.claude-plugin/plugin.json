@@ -51,8 +51,8 @@
     },
     "auto_tick": {
       "type": "boolean",
-      "title": "Auto Tick (Unity Pipeline)",
-      "description": "세션 시작 시 Unity Pipeline의 set_autotick을 켜서 Editor가 비포커스 상태에서도 컴파일·테스트가 진행되게 함 (기본: true, com.unity.pipeline 필요)",
+      "title": "Auto Tick",
+      "description": "세션 시작 시 Editor 강제 tick(autotick)을 켜서 비포커스 상태에서도 컴파일·테스트·도메인 리로드 후 재연결이 진행되게 함 (기본: true, Pipeline set_autotick 또는 UnityMcp unity_set_autotick)",
       "default": true,
       "sensitive": false
     }

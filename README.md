@@ -335,6 +335,7 @@ Example with custom port (overrides auto-discovery):
 | `unity_render_prefab_preview` | Render a prefab to a high-quality preview image in isolation (no Play Mode) |
 | `unity_render_uxml` | Render UXML to image |
 | `unity_refresh_assets` | Refresh AssetDatabase |
+| `unity_set_autotick` | 비포커스 Editor 강제 tick (EditorApplication.SignalTick) — 컴파일·리로드 후 재연결이 멈추지 않게 함 |
 | `unity_addressable_add` | Add asset to Addressable group (requires package) |
 | `unity_addressable_set_address` | Set Addressable asset address (requires package) |
 

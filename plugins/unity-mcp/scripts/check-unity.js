@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   discoverPort,
-  getUnifiedEditorState, pipelineExec,
+  getUnifiedEditorState, pipelineExec, sendRequest,
 } = require('./unity-client');
 const {
   UNITY_PACKAGE_NAME,
@@ -31,7 +31,8 @@ const workspaceDir = process.env.UNITY_WORKSPACE_DIR
 let port = parseInt(process.env.UNITY_TCP_PORT || '9876', 10);
 const checkCompile = args['check-compile'] === 'true';
 const checkReload = args['check-reload'] === 'true';
-// Pipeline 연결 시 set_autotick 을 켜서 Editor 가 비포커스 상태에서도 컴파일/테스트가 멈추지 않게 한다.
+// 연결 시 autotick 을 켜서 Editor 가 비포커스 상태에서도 컴파일/테스트/재연결이 멈추지 않게 한다
+// (Pipeline: set_autotick, UnityMcp TCP: unity_set_autotick — 둘 다 EditorApplication.SignalTick 강제).
 const autoTick = args['auto-tick'] !== 'false';
 const maxWaitSec = parseInt(process.env.UNITY_MAX_WAIT_SEC || '60', 10);
 
@@ -99,6 +100,7 @@ async function runSessionStart({
   autoTick: sessionAutoTick = autoTick,
   getUnifiedEditorStateFn = getUnifiedEditorState,
   pipelineExecFn = pipelineExec,
+  sendRequestFn = sendRequest,
   readPluginVersionFn = readPluginVersion,
   readUnityPackageVersionFn = readUnityPackageVersion,
   logFn = log,
@@ -129,12 +131,16 @@ async function runSessionStart({
   const connectionContext = buildConnectionContext(state);
   if (connectionContext) contextFn(connectionContext);
 
-  if (state.source === 'pipeline' && sessionAutoTick) {
+  if (sessionAutoTick) {
     try {
-      await pipelineExecFn(state.pipeline, 'set_autotick', { enable: true }, 3000);
-      logFn('set_autotick 활성화 — 비포커스 상태에서도 Editor 가 계속 틱합니다');
+      if (state.source === 'pipeline') {
+        await pipelineExecFn(state.pipeline, 'set_autotick', { enable: true }, 3000);
+      } else {
+        await sendRequestFn(state.port, 'unity_set_autotick', { enable: true }, 3000);
+      }
+      logFn('autotick 활성화 — 비포커스 상태에서도 Editor 가 계속 틱합니다');
     } catch (e) {
-      logFn(`set_autotick 실패(무시): ${e.message}`);
+      logFn(`autotick 활성화 실패(무시): ${e.message}`);
     }
   }
 
