@@ -1,7 +1,7 @@
 {
   "name": "unity-mcp",
   "description": "AI 에이전트가 Unity Editor를 제어하는 MCP 브릿지 — Unity CLI/Pipeline과 역할을 나눠 Play Mode 입력, UI 트리, 선언적 Prefab 편집, 렌더링, Addressable을 보강",
-  "version": "0.6.30",
+  "version": "0.6.31",
   "author": {
     "name": "breadpack",
     "url": "https://github.com/breadpack"

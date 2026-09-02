@@ -1,7 +1,7 @@
 {
   "name": "unity-mcp",
   "description": "AI agents can control the Unity Editor through MCP, splitting work with the official Unity CLI/Pipeline: Play Mode input simulation, UI tree inspection, declarative prefab editing, offscreen rendering, and Addressables on top of unity command.",
-  "version": "0.6.30",
+  "version": "0.6.31",
   "author": {
     "name": "breadpack",
     "url": "https://github.com/breadpack"
