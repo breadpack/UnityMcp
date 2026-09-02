@@ -21,6 +21,18 @@ Material을 생성하고 프로퍼티를 설정할 때 사용합니다.
 
 3. **오브젝트에 적용**: `unity_set_asset_reference`로 Renderer의 material 필드에 할당합니다
 
+## Unity CLI로 할 때 (Pipeline 연결 시 우선)
+
+```bash
+unity command list_shaders --json -- --query Lit                 # 사용 가능한 셰이더 찾기
+unity command get_shader_properties --json -- --shader "Universal Render Pipeline/Lit"
+unity command create_asset --json -- --type Material --path Materials/Stone   # authoring root(기본 Assets) 기준 상대 경로
+unity command set_material_properties --json -- --material '{"path":"Assets/Materials/Stone.mat"}' --properties '{"_BaseColor":[0.5,0.5,0.5,1],"_Smoothness":0.2}'
+unity command get_material_properties --json -- --material '{"path":"Assets/Materials/Stone.mat"}'
+```
+
+Renderer에 할당은 `set_component_properties`의 handle 객체(`{"material":{"path":"Assets/Materials/Stone.mat"}}`)를 먼저 시도하고, 배열 슬롯(`materials[1]`)처럼 안 되는 경우에만 `unity_set_asset_reference`를 쓴다.
+
 ## 일반적인 셰이더 프로퍼티
 
 | 셰이더 | 프로퍼티 | 타입 | 설명 |

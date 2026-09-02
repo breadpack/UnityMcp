@@ -66,6 +66,22 @@ unity_animation_clip:
 - **파라미터를 웬만하면 안 쓴다**: 팀 컨트롤러의 81%가 파라미터 0개다. Trigger/Bool로 상태를 조건 분기하지 말고, ExitTime 기반 자동 전이(INTRO→IDLE) + 코드에서 `Animator.Play("OUTRO")` 직접 재생 조합이 표준이다
 - **탄젠트**: `set_curve`의 tangentMode 기본값 `auto`(ClampedAuto)면 충분하다. 딱딱 끊기는 연출이 필요할 때만 `linear`, 계단식 전환은 `constant`
 
+## Unity CLI로 할 때
+
+클립·컨트롤러 에셋 편집은 Pipeline 명령으로도 가능하다. **포즈 샘플링(`sample`/`stop_sample`)과 런타임 파라미터 조작(`unity_animator_control`)은 Pipeline에 없으므로 MCP 도구를 쓴다.**
+
+```bash
+unity command create_animation_clip --json -- --path Anim/NKM_UI_X_INTRO --frame_rate 60
+unity command set_animation_curve --json -- --clip '{"path":"Assets/Anim/NKM_UI_X_INTRO.anim"}' --target_path "" --type CanvasGroup --property m_Alpha --keys '[{"time":0,"value":0},{"time":0.5,"value":1}]'
+unity command get_animation_clip --json -- --clip '{"path":"Assets/Anim/NKM_UI_X_INTRO.anim"}'
+unity command create_animator_controller --json -- --path Anim/NKM_UI_X
+unity command add_animator_state --json -- --controller '{"path":"Assets/Anim/NKM_UI_X.controller"}' --name INTRO --motion '{"path":"Assets/Anim/NKM_UI_X_INTRO.anim"}' --is_default true
+unity command add_animator_transition --json -- --controller '{"path":"Assets/Anim/NKM_UI_X.controller"}' --from INTRO --to IDLE --has_exit_time true --exit_time 1
+unity command get_animator_controller --json -- --controller '{"path":"Assets/Anim/NKM_UI_X.controller"}'
+```
+
+인자 이름은 `unity command <name> --help`로 확인한다(위는 0.5.0-exp.1 기준). 커브 레시피와 팀 표준값은 어느 경로든 동일하게 적용한다.
+
 ## Play Mode 검증 (unity_animator_control)
 
 Animator가 실제로 붙어 재생되는지 런타임 확인이 필요하면:

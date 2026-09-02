@@ -94,8 +94,19 @@ Claude Code 세션 내에서:
 | `auto_save_scene` | 씬 변경 후 자동 저장 | `false` |
 | `check_compile_status` | 도구 호출 전 컴파일 상태 체크 | `true` |
 | `check_domain_reload` | 도구 호출 전 도메인 리로드 상태 체크 | `true` |
+| `auto_tick` | 세션 시작 시 Unity Pipeline `set_autotick` 활성화 (비포커스 상태에서도 컴파일·테스트 진행) | `true` |
 
 > 포트는 workspace(projectPath) 기준으로 9876~9885를 자동 탐색하므로 별도 설정이 필요 없습니다. 고정 포트를 강제하거나 대기 시간을 바꾸려면 환경변수(`UNITY_TCP_PORT`, `UNITY_MAX_WAIT_SEC`)를 사용하세요.
+
+### Unity CLI / Pipeline 연동 (Unity 6.0+)
+
+프로젝트에 Unity 공식 `com.unity.pipeline` 패키지가 설치되어 있으면(`unity pipeline install`) 훅이 Pipeline HTTP 서버(`Library/Pipeline/.unity-pipeline-port`)를 우선 사용하고, 에이전트에게 **CLI로 할 일과 MCP 도구로 할 일**을 안내합니다.
+
+- 씬·에셋·설정·빌드·테스트·Play Mode 제어처럼 Pipeline 내장 명령이 있는 작업은 `unity command <name> --json`으로 처리합니다.
+- Play Mode 입력 시뮬레이션, uGUI/UI Toolkit 트리 조회, 선언적 Prefab 편집(`unity_prefab_apply`), UXML/Prefab 오프스크린 렌더, Addressable, Undo 히스토리, 런타임 Animator 제어는 Pipeline에 없으므로 UnityMcp MCP 도구가 담당합니다.
+- Pipeline이 없는 프로젝트에서는 기존과 동일하게 UnityMcp TCP 서버(9876~)로 동작합니다.
+- **UnityMcp 고유 도구 27종은 `[CliCommand]`로도 노출됩니다.** `com.unity.pipeline`이 설치되어 있으면 `unity command --tag breadpack`에 같은 이름·같은 파라미터로 나타나고, `unity mcp`와 헤드리스 `unity run --command`에서도 사용할 수 있습니다. 사용자가 `[McpTool]`로 만든 커스텀 도구도 `unity command unity_custom_tool`로 호출됩니다. Pipeline이 없으면 이 어댑터는 컴파일에서 제외되므로 프로젝트에 영향이 없습니다.
+- 설계 배경과 단계별 이행 계획은 `docs/superpowers/specs/2026-09-02-unity-cli-integration-design.md`를 참고하세요.
 
 ### Step 4. 검증
 
@@ -107,9 +118,12 @@ Unity Editor를 연 상태에서 Codex 또는 Claude Code에 다음과 같이 �
 
 **MCP 서버 (unity-bridge)** — 45+ Unity 도구 (씬, 컴포넌트, 에셋, 빌드 등)
 
-**Skills 6종** — Unity workflow 가이드
+**Skills 9종** — Unity workflow 가이드
 | Skill | Claude Code 명령어 / Codex trigger |
 |-------|------------------------------------|
+| CLI Workflow (CLI ↔ MCP 역할 분담) | `/unity-mcp:unity-cli-workflow` / `unity-cli-workflow` |
+| Play Mode Input | `/unity-mcp:unity-playmode-input` / `unity-playmode-input` |
+| Animation | `/unity-mcp:unity-animation` / `unity-animation` |
 | Scene Setup | `/unity-mcp:unity-scene-setup` / `unity-scene-setup` |
 | UI Build | `/unity-mcp:unity-ui-build` / `unity-ui-build` |
 | Material Setup | `/unity-mcp:unity-material-setup` / `unity-material-setup` |
@@ -125,10 +139,10 @@ Unity Editor를 연 상태에서 Codex 또는 Claude Code에 다음과 같이 �
 | `unity-asset-manager` | Material, Prefab, Addressable, 빌드 관리 |
 
 **Hooks** — 자동 상태 관리
-- `SessionStart`: Unity 연결 상태 체크 및 프로젝트 정보 출력
-- `PreToolUse`: 도구 호출 전 컴파일/도메인 리로드 감지. 진행 중이면 대기 후 재시도.
+- `SessionStart`: Unity 연결 상태 체크(Pipeline 우선, TCP 폴백), 어느 경로가 살아 있는지 `[Unity connection]` 컨텍스트 주입, Pipeline 연결 시 `set_autotick` 활성화
+- `PreToolUse`: 도구 호출 전 컴파일/도메인 리로드/settling 감지. 진행 중이면 대기 후 재시도.
 - `PostToolUse`: 씬 변경 도구 실행 후 `auto_save_scene=true` 시 자동 저장. Prefab Stage에서는 명시적 Prefab 저장 결정을 보존하기 위해 건너뜀.
-- `PostToolUseFailure`: 도구 실행 실패 시 연결 복구 진단.
+- `PostToolUseFailure`: 도구 실행 실패 시 연결 복구 진단. 복구 실패 시 `Logs/Editor.log`의 컴파일 에러를 컨텍스트로 주입.
 
 ### 사용 예시
 

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/check-unity.js --mode=session-start"
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/check-unity.js --mode=session-start --auto-tick=${userConfig.auto_tick}"
           }
         ]
       }

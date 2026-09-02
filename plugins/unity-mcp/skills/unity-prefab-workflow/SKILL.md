@@ -50,6 +50,20 @@ Prefab 편집에는 두 가지 경로가 있습니다. **대부분의 경우 `un
 
 상태 확인: 언제든 `unity_prefab_edit`(action="status")로 현재 편집 모드 여부·assetPath·rootInstanceId를 조회할 수 있습니다. `unity_get_editor_state`/`unity_ping`도 `inPrefabStage`/`prefabStagePath`를 보고합니다.
 
+## Unity CLI와의 역할 분담
+
+Pipeline이 연결되어 있어도 **Prefab 내부 편집은 MCP 도구(`unity_prefab_apply`, `unity_prefab_edit`)로 한다.** Pipeline의 `save_prefab_contents`는 자식 rename과 active 토글 두 가지만 지원한다. 반면 인스턴스 수준 작업은 CLI가 충분하다:
+
+```bash
+unity command instantiate_prefab --json -- --prefab '{"path":"Assets/Prefabs/Enemy.prefab"}' --parent '{"hierarchyPath":"/Enemies"}'
+unity command create_prefab --json -- --target '{"hierarchyPath":"/Enemy"}' --path Prefabs/Enemy   # 씬 오브젝트를 prefab으로 저장
+unity command create_prefab_variant --json -- --base '{"path":"Assets/Prefabs/Enemy.prefab"}' --path Prefabs/EnemyBoss
+unity command apply_prefab_overrides --json -- --target '{"hierarchyPath":"/Enemies/Enemy"}'
+unity command unpack_prefab --json -- --target '{"hierarchyPath":"/Enemies/Enemy"}' --completely false
+```
+
+디스크상의 prefab 구조 확인은 계속 `unity_get_asset_hierarchy`를 쓴다(Pipeline `get_scene_hierarchy`는 열린 씬만 본다).
+
 ## Prefab 인스턴스화
 
 1. `unity_instantiate_prefab`으로 Prefab을 씬에 배치합니다

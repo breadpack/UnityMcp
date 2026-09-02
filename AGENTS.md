@@ -29,14 +29,25 @@ AI Agent ←(stdio/MCP JSON-RPC)→ UnityMcpBridge ←(TCP localhost:9876, lengt
 - **agents/** — 전문 에이전트 3종 (scene-architect, debugger, asset-manager). 각 에이전트는 특정 skills와 `mcp__unity-bridge__*` 도구를 번들한다.
 - **hooks/hooks.json** — SessionStart/PreToolUse/PostToolUse/PostToolUseFailure 훅. `scripts/check-unity.js`를 호출해 Unity 컴파일/도메인 리로드 상태를 감지하고, 진행 중이면 대기 루프로 완료를 기다린다.
 - **scripts/** — 훅 스크립트와 브릿지 실행 래퍼 (`run-bridge.js`는 `${CLAUDE_PLUGIN_DATA}/bin/`의 번들 바이너리 → GitHub Release lazy download → `npx -y unity-mcp-bridge` 순으로 fallback).
-- **skills/** — 워크플로우 가이드 6종 (유지).
+- **skills/** — 워크플로우 가이드 9종. `unity-cli-workflow`가 CLI ↔ MCP 역할 분담의 기준 문서이고, 나머지 skill은 각자 "Unity CLI로 할 때" 절에서 이를 참조한다.
 
-플러그인 매니페스트의 `userConfig`로 `auto_save_scene`, `check_compile_status`, `check_domain_reload`를 사용자가 설치 시 설정한다. 이 값들은 `${userConfig.xxx}` 치환으로 `hooks` 커맨드 인자에 전달된다. 포트·대기 시간은 userConfig가 아니라 환경변수(`UNITY_TCP_PORT`, `UNITY_MAX_WAIT_SEC`)로만 조정한다 — 포트는 기본이 workspace 자동 탐색이므로 설치 옵션에서 제외했다.
+플러그인 매니페스트의 `userConfig`로 `auto_save_scene`, `check_compile_status`, `check_domain_reload`, `auto_tick`을 사용자가 설치 시 설정한다. 이 값들은 `${userConfig.xxx}` 치환으로 `hooks` 커맨드 인자에 전달된다. 포트·대기 시간은 userConfig가 아니라 환경변수(`UNITY_TCP_PORT`, `UNITY_MAX_WAIT_SEC`)로만 조정한다 — 포트는 기본이 workspace 자동 탐색이므로 설치 옵션에서 제외했다.
+
+### Unity CLI / Pipeline 연동 (2026-09 이후)
+
+Unity 공식 CLI(`unity`)와 `com.unity.pipeline` 패키지가 Editor 제어의 전송 계층을 제공한다. 설계 문서는 `docs/superpowers/specs/2026-09-02-unity-cli-integration-design.md`.
+
+- 훅은 `Library/Pipeline/.unity-pipeline-port` 디스크립터를 찾으면 Pipeline HTTP(`/api/status`, `editor_status`)를 우선 사용하고, 없거나 도달 불가면 UnityMcp TCP로 폴백한다 (`getUnifiedEditorState`).
+- 역할 분담 원칙: **Pipeline 내장 명령이 있는 작업(씬·에셋·설정·빌드·테스트·Play Mode 제어)은 `unity command`로, Pipeline에 없는 작업(Play Mode 입력, UI 트리, `prefab_apply`, 오프스크린 렌더, Addressable, Undo, 런타임 Animator)은 MCP 도구로.** 새 도구를 추가하기 전에 Pipeline 0.5 내장 명령 153개(설계 문서 §1.4)에 이미 있는지 확인한다.
+- **Phase 2 (완료)**: 고유 도구 27종이 `UnityMcpEditor/Editor/Pipeline/`의 `[CliCommand]` 어댑터로 이중 노출된다. 어댑터는 `scripts/gen-pipeline-commands.js`가 `UnityMcpBridge/Tools`의 `[McpServerTool]` 정의에서 **생성**한다(`Generated/Commands_*.cs`, 직접 수정 금지). Bridge 도구 시그니처를 바꾸면 생성기를 다시 실행하고, `--check`로 최신 여부를 검증한다. 어댑터는 `PipelineBridge.Invoke` → `McpServerBootstrap.DispatchAsync`로 기존 핸들러에 위임하므로 핸들러 본체는 한 벌이다.
+- 어댑터 asmdef(`BreadPack.Mcp.Unity.Pipeline`)는 `versionDefines`로 `com.unity.pipeline` 존재 시에만 `UNITY_PIPELINE_PRESENT`를 정의하고, 모든 소스가 이 심볼로 감싸져 있어 Pipeline 미설치 프로젝트에서는 빈 어셈블리가 된다(소프트 의존).
+- 다음 단계(Phase 3)는 Bridge·TCP 제거이며 minor 버전에서 한다.
 
 ### 새 hook 스크립트 추가 시
-- TCP 통신은 `scripts/unity-client.js`의 `tcpPing`/`sendRequest`/`getEditorState`를 재사용
-- Bridge가 기동 전/중단 상태일 수 있으므로 Editor TCP 서버(9876)와 직접 통신한다 (Bridge 경유 X)
-- 에러는 stderr에 `[Unity MCP] ...` 형식으로 출력, exit code는 차단 목적(1) vs 정보성(0) 구분
+- Editor 상태는 `scripts/unity-client.js`의 `getUnifiedEditorState(workspaceDir, { port })`를 쓴다 (Pipeline 우선, TCP 폴백). Pipeline 명령 실행은 `pipelineExec(desc, name, params)`, TCP 는 `sendRequest`
+- CLI 프로세스(`unity …`)를 훅에서 스폰하지 않는다 — 호출당 약 0.8초라 폴링에 부적합하다. HTTP 직접 호출을 쓴다
+- Bridge가 기동 전/중단 상태일 수 있으므로 Editor 서버와 직접 통신한다 (Bridge 경유 X)
+- 에러는 stderr에 `[Unity MCP] ...` 형식으로 출력, exit code는 차단 목적(1) vs 정보성(0) 구분. 에이전트에게 줄 정보는 stdout에 `[Unity ...]` 헤더 블록으로 출력
 
 ## Versioning Policy
 

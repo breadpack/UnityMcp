@@ -1,7 +1,7 @@
 {
   "name": "unity-mcp",
-  "description": "AI 에이전트가 Unity Editor를 제어하는 MCP 브릿지 — 씬 편집, 에셋 관리, 빌드 자동화",
-  "version": "0.6.28",
+  "description": "AI 에이전트가 Unity Editor를 제어하는 MCP 브릿지 — Unity CLI/Pipeline과 역할을 나눠 Play Mode 입력, UI 트리, 선언적 Prefab 편집, 렌더링, Addressable을 보강",
+  "version": "0.6.30",
   "author": {
     "name": "breadpack",
     "url": "https://github.com/breadpack"
@@ -15,7 +15,9 @@
     "gamedev",
     "editor",
     "scene",
-    "build"
+    "build",
+    "unity-cli",
+    "pipeline"
   ],
   "mcpServers": {
     "unity-bridge": {
@@ -44,6 +46,13 @@
       "type": "boolean",
       "title": "Check Domain Reload",
       "description": "도구 호출 전 도메인 리로드 상태 체크 여부 (기본: true)",
+      "default": true,
+      "sensitive": false
+    },
+    "auto_tick": {
+      "type": "boolean",
+      "title": "Auto Tick (Unity Pipeline)",
+      "description": "세션 시작 시 Unity Pipeline의 set_autotick을 켜서 Editor가 비포커스 상태에서도 컴파일·테스트가 진행되게 함 (기본: true, com.unity.pipeline 필요)",
       "default": true,
       "sensitive": false
     }

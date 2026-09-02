@@ -1,0 +1,23 @@
+{
+    "name": "BreadPack.Mcp.Unity.Pipeline",
+    "rootNamespace": "BreadPack.Mcp.Unity.Pipeline",
+    "references": [
+        "BreadPack.Mcp.Unity",
+        "Unity.Pipeline"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": ["Newtonsoft.Json.dll"],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.pipeline",
+            "expression": "0.3.0",
+            "define": "UNITY_PIPELINE_PRESENT"
+        }
+    ],
+    "noEngineReferences": false
+}

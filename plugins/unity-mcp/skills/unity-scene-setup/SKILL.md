@@ -18,6 +18,22 @@ Unity 씬을 구성할 때 다음 워크플로우를 따르세요.
 7. **검증**: `unity_get_hierarchy`로 최종 구조를 확인합니다
 8. **저장**: `unity_save_scene`으로 씬을 저장합니다
 
+## Unity CLI로 할 때 (Pipeline 연결 시 우선)
+
+`unity-cli-workflow` skill 참조. 위 워크플로우는 전부 Pipeline 내장 명령으로 대체된다.
+
+```bash
+unity command get_scene_hierarchy --json
+unity command create_gameobject --json -- --name Player --primitive capsule
+unity command set_parent --json -- --target '{"hierarchyPath":"/Player"}' --parent '{"hierarchyPath":"/World"}'
+unity command add_component --json -- --target '{"hierarchyPath":"/World/Player"}' --type Rigidbody
+unity command set_transform --json -- --target '{"hierarchyPath":"/World/Player"}' --position '[0,1,0]'
+unity command set_component_properties --json -- --target '{"hierarchyPath":"/World/Player"}' --type Rigidbody --properties '{"mass":2}'
+unity command save_scene --json
+```
+
+여러 오브젝트를 한 번에 만들 때는 `create_gameobjects`(복수형)로 왕복을 줄인다. 반환된 `globalId`/`instanceId`를 다음 명령의 `--target`에 그대로 넘긴다.
+
 ## 주의사항
 
 - GameObject 식별에는 `instanceId`(정확) 또는 `path`(직관적)를 사용합니다

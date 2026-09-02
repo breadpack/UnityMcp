@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 "use strict";
 
-const { sendRequest, getEditorState, discoverPort } = require("./unity-client");
+const {
+  sendRequest, getEditorState, discoverPort,
+  findPipelineDescriptor, pipelineExec,
+} = require("./unity-client");
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -28,6 +31,8 @@ async function run({
   discoverPortFn = discoverPort,
   getEditorStateFn = getEditorState,
   sendRequestFn = sendRequest,
+  findPipelineDescriptorFn = findPipelineDescriptor,
+  pipelineExecFn = pipelineExec,
   logFn = log,
 } = {}) {
   // 자동 저장이 꺼져 있으면 연결 확인만을 위한 단명 TCP probe도 만들지 않는다.
@@ -38,7 +43,17 @@ async function run({
   try {
     state = await getEditorStateFn(port);
   } catch {
-    return { skipped: "editor_unavailable" };
+    // UnityMcp TCP 가 없어도 Unity Pipeline 이 살아 있으면 그쪽의 save_scene 으로 저장한다.
+    const desc = findPipelineDescriptorFn(workspace);
+    if (!desc) return { skipped: "editor_unavailable" };
+    try {
+      await pipelineExecFn(desc, "save_scene", {}, 5000);
+      logFn("씬 자동 저장 완료 (pipeline)");
+      return { saved: true, source: "pipeline" };
+    } catch (e) {
+      logFn(`씬 자동 저장 실패 (pipeline): ${e.message}`);
+      return { saved: false, error: e.message, source: "pipeline" };
+    }
   }
 
   // Prefab Stage에서 unity_save_scene을 호출하면 preview scene을 잘못 저장하거나

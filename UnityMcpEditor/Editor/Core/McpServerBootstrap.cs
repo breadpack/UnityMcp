@@ -111,6 +111,23 @@ namespace BreadPack.Mcp.Unity
             StartServer();
         }
 
+        /// <summary>
+        /// TCP 서버를 거치지 않고 등록된 핸들러를 직접 호출한다. Unity Pipeline [CliCommand] 어댑터
+        /// (BreadPack.Mcp.Unity.Pipeline)가 사용한다. 메인 스레드에서 호출해야 한다 — Pipeline 은
+        /// MainThreadRequired 명령을 메인 스레드에서 실행하므로 추가 디스패치가 필요 없다.
+        /// TCP 서버 기동 여부와 무관하게(포트 바인딩 실패 등) 핸들러 레지스트리만 있으면 동작한다.
+        /// </summary>
+        public static Task<object> DispatchAsync(string tool, JObject @params)
+        {
+            if (_dispatcher == null)
+            {
+                MainThreadDispatcher.EnsureInitialized();
+                if (!EditorStateCache.IsInitialized) EditorStateCache.Initialize();
+                RegisterHandlers();
+            }
+            return _dispatcher.HandleAsync(tool, @params ?? new JObject());
+        }
+
         private static void RegisterHandlers()
         {
             _logBuffer = new ConsoleLogBuffer();

@@ -22,6 +22,14 @@ Unity UI를 구축할 때 사용합니다.
 3. **화면 상태**: `unity_get_screen`으로 활성 UIDocument 정보를 확인합니다
 4. **인터랙션**: `unity_get_available_actions`로 클릭 가능한 요소를 확인합니다
 
+## Play Mode 인터랙션 검증
+
+구축한 UI가 실제로 동작하는지는 `unity-playmode-input` skill의 `unity_input_click`/`unity_input_drag`/`unity_input_type_text`로 확인한다. UI 트리 조회·입력 시뮬레이션·UXML 렌더는 Unity CLI에 없는 UnityMcp 고유 기능이므로 Pipeline이 연결되어 있어도 MCP 도구를 쓴다.
+
+## Unity CLI로 할 때
+
+GameObject 생성·컴포넌트 추가·RectTransform 값 설정은 Pipeline 명령(`create_gameobject`, `add_component`, `set_component_properties`)으로도 가능하다. UI 요소를 대량으로 만들 때는 `unity command eval`에 C# 블록 하나로 묶는 편이 빠르다. 트리 확인은 여전히 `unity_get_ugui_tree`/`unity_get_ui_tree`.
+
 ## RectTransform 프로퍼티 설정 예시
 
 ```
