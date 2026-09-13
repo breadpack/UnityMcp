@@ -1,0 +1,50 @@
+{
+  "description": "Unity MCP lifecycle hooks for Codex — connection check, compile/reload wait, auto-save, failure diagnosis. Options come from UNITY_MCP_* environment variables instead of userConfig.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require(require('path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'scripts','codex-hook.js'))\" session-start",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__unity-bridge__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require(require('path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'scripts','codex-hook.js'))\" pre-tool",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__unity-bridge__(unity_create_gameobject|unity_delete_gameobject|unity_add_component|unity_remove_component|unity_set_property|unity_set_transform|unity_reparent_gameobject|unity_instantiate_prefab)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require(require('path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'scripts','codex-hook.js'))\" post-tool",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__unity-bridge__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require(require('path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'scripts','codex-hook.js'))\" failure-diagnosis",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

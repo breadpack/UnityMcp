@@ -27,7 +27,7 @@ AI Agent ←(stdio/MCP JSON-RPC)→ UnityMcpBridge ←(TCP localhost:9876, lengt
 이 저장소는 Codex 플러그인으로도 동작한다 (`.Codex-plugin/plugin.json` v0.3.0).
 
 - **agents/** — 전문 에이전트 3종 (scene-architect, debugger, asset-manager). 각 에이전트는 특정 skills와 `mcp__unity-bridge__*` 도구를 번들한다.
-- **hooks/hooks.json** — SessionStart/PreToolUse/PostToolUse/PostToolUseFailure 훅. `scripts/check-unity.js`를 호출해 Unity 컴파일/도메인 리로드 상태를 감지하고, 진행 중이면 대기 루프로 완료를 기다린다.
+- **hooks/hooks.json** — SessionStart/PreToolUse/PostToolUse/PostToolUseFailure 훅. `scripts/check-unity.js`를 호출해 Unity 컴파일/도메인 리로드 상태를 감지하고, 진행 중이면 대기 루프로 완료를 기다린다. Codex는 `.codex-plugin/plugin.json`의 `hooks`가 가리키는 **`hooks/codex-hooks.json`**을 쓴다 — Codex hook에는 `${CLAUDE_PLUGIN_ROOT}`·`${userConfig.*}` 치환과 `PostToolUseFailure` 이벤트가 없으므로, `node -e`로 `PLUGIN_ROOT` 환경변수를 읽어 `scripts/codex-hook.js`를 부르고 옵션은 `UNITY_MCP_*` 환경변수(기본값 = userConfig default)로 받는다. 한쪽 hook 인자를 바꾸면 `codex-hook.js`와 `codex-hook.test.js`도 같이 맞춘다.
 - **scripts/** — 훅 스크립트와 브릿지 실행 래퍼 (`run-bridge.js`는 `${CLAUDE_PLUGIN_DATA}/bin/`의 번들 바이너리 → GitHub Release lazy download → `npx -y unity-mcp-bridge` 순으로 fallback).
 - **skills/** — 워크플로우 가이드 9종. `unity-cli-workflow`가 CLI ↔ MCP 역할 분담의 기준 문서이고, 나머지 skill은 각자 "Unity CLI로 할 때" 절에서 이를 참조한다.
 

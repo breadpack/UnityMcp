@@ -21,6 +21,7 @@
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/codex-hooks.json",
   "interface": {
     "displayName": "Unity MCP",
     "shortDescription": "Control Unity Editor from Codex",

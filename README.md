@@ -70,6 +70,12 @@ Codex에서 포트나 대기 시간을 바꾸려면 Codex를 실행하는 셸/�
 | `UNITY_TCP_PORT` | Unity TCP 포트. 설정하지 않으면 workspace 기준으로 9876~9885 자동 탐색 | 자동 탐색 |
 | `UNITY_MAX_WAIT_SEC` | 컴파일/도메인 리로드 대기 최대 시간(초) | `60` |
 | `UNITY_WORKSPACE_DIR` | Unity projectPath 매칭에 사용할 workspace 경로 | 현재 작업 디렉터리 |
+| `UNITY_MCP_AUTO_SAVE_SCENE` | 씬 변경 도구 실행 후 자동 저장 (Claude `auto_save_scene`) | `false` |
+| `UNITY_MCP_CHECK_COMPILE_STATUS` | 도구 호출 전 컴파일 상태 체크 (Claude `check_compile_status`) | `true` |
+| `UNITY_MCP_CHECK_DOMAIN_RELOAD` | 도구 호출 전 도메인 리로드 상태 체크 (Claude `check_domain_reload`) | `true` |
+| `UNITY_MCP_AUTO_TICK` | 세션 시작 시 Editor autotick 활성화 (Claude `auto_tick`) | `true` |
+
+Codex에는 설치 옵션(`userConfig`)이 없어 위 `UNITY_MCP_*` 환경변수로 hook 동작을 조정합니다. Codex는 플러그인 hook을 자동으로 신뢰하지 않으므로, 설치 후 Codex CLI에서 `/hooks`를 열어 unity-mcp hook을 검토·신뢰해야 동작합니다(버전이 바뀌어 hook 정의가 달라지면 다시 신뢰).
 
 ### Step 3. Claude Code에서 설치
 
@@ -142,7 +148,8 @@ Unity Editor를 연 상태에서 Codex 또는 Claude Code에 다음과 같이 �
 - `SessionStart`: Unity 연결 상태 체크(Pipeline 우선, TCP 폴백), 어느 경로가 살아 있는지 `[Unity connection]` 컨텍스트 주입, Pipeline 연결 시 `set_autotick` 활성화
 - `PreToolUse`: 도구 호출 전 컴파일/도메인 리로드/settling 감지. 진행 중이면 대기 후 재시도.
 - `PostToolUse`: 씬 변경 도구 실행 후 `auto_save_scene=true` 시 자동 저장. Prefab Stage에서는 명시적 Prefab 저장 결정을 보존하기 위해 건너뜀.
-- `PostToolUseFailure`: 도구 실행 실패 시 연결 복구 진단. 복구 실패 시 `Logs/Editor.log`의 컴파일 에러를 컨텍스트로 주입.
+- `PostToolUseFailure`: 도구 실행 실패 시 연결 복구 진단. 복구 실패 시 `Logs/Editor.log`의 컴파일 에러를 컨텍스트로 주입. (Codex에는 이 이벤트가 없어 모든 unity-bridge 도구의 `PostToolUse`에서 같은 진단을 수행 — 연결이 살아 있으면 상태 조회 한 번으로 끝남)
+- Claude Code는 `hooks/hooks.json`, Codex는 `hooks/codex-hooks.json`(`scripts/codex-hook.js` 진입점)을 사용합니다.
 
 ### 사용 예시
 
